@@ -1,30 +1,107 @@
 
 from pico2d import *
+import os
 
-# 게임 화면 크기 (16:9)
+# 게임 화면 크기
 SCREEN_WIDTH = 1280
 SCREEN_HEIGHT = 720
 
-# 게임 실행 여부
+# 게임 상태
+TITLE = 0
+STAGE = 1
+
+game_state = TITLE
 running = True
 
-# 배경 이미지
-background = None
+# 이미지
+title_image = None
+stage_image = None
+
+button_normal = None
+button_hover = None
+button_pressed = None
+
+# 버튼 위치 및 크기
+BUTTON_X = 640
+BUTTON_Y = 100
+BUTTON_WIDTH = 400
+BUTTON_HEIGHT = 133
+
+# 버튼 상태
+is_hover = False
+is_pressed = False
 
 
-# 키보드 및 창 종료 이벤트 처리
+# 이미지 파일 경로
+def asset_path(*parts):
+    return os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        'assets',
+        *parts
+    )
+
+
+# 마우스가 버튼 안에 있는지 확인
+def is_mouse_on_button(x, y):
+    left = BUTTON_X - BUTTON_WIDTH // 2
+    right = BUTTON_X + BUTTON_WIDTH // 2
+    bottom = BUTTON_Y - BUTTON_HEIGHT // 2
+    top = BUTTON_Y + BUTTON_HEIGHT // 2
+
+    return left <= x <= right and bottom <= y <= top
+
+
+# 키보드 및 마우스 이벤트 처리
 def handle_events():
-    global running
+    global running, game_state
+    global is_hover, is_pressed
 
     events = get_events()
 
     for event in events:
+        # 창 닫기
         if event.type == SDL_QUIT:
             running = False
 
+        # ESC 키 종료
         elif event.type == SDL_KEYDOWN:
             if event.key == SDLK_ESCAPE:
                 running = False
+
+        # 타이틀 화면에서만 버튼 입력 처리
+        if game_state != TITLE:
+            continue
+
+        # 마우스 이동
+        if event.type == SDL_MOUSEMOTION:
+            mouse_x = event.x
+            mouse_y = SCREEN_HEIGHT - event.y
+
+            is_hover = is_mouse_on_button(mouse_x, mouse_y)
+
+        # 마우스 왼쪽 버튼 누르기
+        elif event.type == SDL_MOUSEBUTTONDOWN:
+            if event.button == SDL_BUTTON_LEFT:
+                mouse_x = event.x
+                mouse_y = SCREEN_HEIGHT - event.y
+
+                is_hover = is_mouse_on_button(mouse_x, mouse_y)
+
+                if is_hover:
+                    is_pressed = True
+
+        # 마우스 왼쪽 버튼 놓기
+        elif event.type == SDL_MOUSEBUTTONUP:
+            if event.button == SDL_BUTTON_LEFT:
+                mouse_x = event.x
+                mouse_y = SCREEN_HEIGHT - event.y
+
+                is_hover = is_mouse_on_button(mouse_x, mouse_y)
+
+                if is_pressed and is_hover:
+                    game_state = STAGE
+
+                is_pressed = False
 
 
 # 게임 상태 업데이트
@@ -32,43 +109,94 @@ def update():
     pass
 
 
+# 배경 이미지 출력
+def draw_background(image):
+    image.draw(
+        SCREEN_WIDTH // 2,
+        SCREEN_HEIGHT // 2,
+        SCREEN_WIDTH,
+        SCREEN_HEIGHT
+    )
+
+
+# 시작 버튼 출력
+def draw_start_button():
+    if is_pressed and is_hover:
+        image = button_pressed
+
+    elif is_hover:
+        image = button_hover
+
+    else:
+        image = button_normal
+
+    image.draw(
+        BUTTON_X,
+        BUTTON_Y,
+        BUTTON_WIDTH,
+        BUTTON_HEIGHT
+    )
+
+
+# 타이틀 화면
+def draw_title():
+    draw_background(title_image)
+    draw_start_button()
+
+
+# 무대 화면
+def draw_stage():
+    draw_background(stage_image)
+
+
 # 게임 화면 그리기
 def draw():
     clear_canvas()
 
-    # 원본 이미지 비율을 유지하며 화면에 출력
-    image_ratio = background.w / background.h
-    screen_ratio = SCREEN_WIDTH / SCREEN_HEIGHT
+    if game_state == TITLE:
+        draw_title()
 
-    if image_ratio > screen_ratio:
-        draw_height = SCREEN_HEIGHT
-        draw_width = int(draw_height * image_ratio)
-    else:
-        draw_width = SCREEN_WIDTH
-        draw_height = int(draw_width / image_ratio)
-
-    background.draw(
-        SCREEN_WIDTH // 2,
-        SCREEN_HEIGHT // 2,
-        draw_width,
-        draw_height
-    )
+    elif game_state == STAGE:
+        draw_stage()
 
     update_canvas()
 
 
 # 메인 함수
 def main():
-    global running, background
+    global running, game_state
+    global title_image, stage_image
+    global button_normal, button_hover, button_pressed
+    global is_hover, is_pressed
 
     open_canvas(SCREEN_WIDTH, SCREEN_HEIGHT)
 
-    # 서커스 무대 이미지 불러오기
-    background = load_image(
-        'assets/circus_stage_front.png'
+    # 배경 이미지 로딩
+    title_image = load_image(
+        asset_path('background', 'title.png')
+    )
+
+    stage_image = load_image(
+        asset_path('background', 'circus_stage_front.png')
+    )
+
+    # 버튼 이미지 로딩
+    button_normal = load_image(
+        asset_path('ui', 'start_button_normal.png')
+    )
+
+    button_hover = load_image(
+        asset_path('ui', 'start_button_hover.png')
+    )
+
+    button_pressed = load_image(
+        asset_path('ui', 'start_button_pressed.png')
     )
 
     running = True
+    game_state = TITLE
+    is_hover = False
+    is_pressed = False
 
     # 게임 루프
     while running:
