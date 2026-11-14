@@ -24,7 +24,11 @@ title_image = None
 ready_image = None
 play_image = None
 
-# 버튼 이미지
+# 커튼 이미지
+curtain_left = None
+curtain_right = None
+
+# 시작 버튼 이미지
 button_normal = None
 button_hover = None
 button_pressed = None
@@ -34,7 +38,7 @@ mouse = None
 dialogue = None
 guide_font = None
 
-# 시작 버튼
+# 시작 버튼 위치 및 크기
 BUTTON_X = 640
 BUTTON_Y = 140
 BUTTON_WIDTH = 400
@@ -43,9 +47,12 @@ BUTTON_HEIGHT = 133
 is_hover = False
 is_pressed = False
 
-# 커튼 전환 시간
+# 커튼 애니메이션
 opening_time = 0.0
-OPENING_DURATION = 1.4
+OPENING_DURATION = 2.0
+
+# 커튼이 좌우로 이동하는 거리
+CURTAIN_MOVE_DISTANCE = SCREEN_WIDTH / 2
 
 
 # 이미지 경로
@@ -57,7 +64,7 @@ def asset_path(*parts):
     )
 
 
-# 버튼 영역 판정
+# 시작 버튼 영역 판정
 def is_mouse_on_button(x, y):
     left = BUTTON_X - BUTTON_WIDTH / 2
     right = BUTTON_X + BUTTON_WIDTH / 2
@@ -82,24 +89,26 @@ def handle_events():
         # 키보드 입력
         if event.type == SDL_KEYDOWN:
 
+            # ESC: 종료
             if event.key == SDLK_ESCAPE:
                 running = False
                 continue
 
+            # READY 상태에서만 대사 및 Enter 처리
             if game_state == READY:
 
                 # Space: 대사 진행
                 if event.key == SDLK_SPACE:
                     dialogue.next()
 
-                # Enter: 커튼 열기
+                # Enter: 대사가 끝난 후 커튼 열기
                 elif event.key in (SDLK_RETURN, SDLK_KP_ENTER):
 
                     if dialogue.finished:
                         opening_time = 0.0
                         game_state = OPENING
 
-        # TITLE 상태에서만 버튼 처리
+        # 타이틀 화면에서만 마우스 처리
         if game_state != TITLE:
             continue
 
@@ -140,16 +149,17 @@ def handle_events():
 def update(dt):
     global game_state, opening_time
 
+    # 생쥐 단장 대사 화면
     if game_state == READY:
         mouse.update()
         dialogue.update(dt)
 
+    # 커튼 열림 애니메이션
     elif game_state == OPENING:
         opening_time += dt
 
         if opening_time >= OPENING_DURATION:
             opening_time = OPENING_DURATION
-            play_image.opacify(1.0)
             game_state = PLAY
 
 
@@ -167,8 +177,10 @@ def draw_background(image):
 def draw_start_button():
     if is_pressed and is_hover:
         image = button_pressed
+
     elif is_hover:
         image = button_hover
+
     else:
         image = button_normal
 
@@ -188,30 +200,67 @@ def draw_title():
 
 # 공연 준비 화면
 def draw_ready():
+
+    # 기존 무대 뒤 배경만 출력
     draw_background(ready_image)
+
+    # 생쥐 단장
     mouse.draw()
+
+    # 말풍선 및 대사
     dialogue.draw()
 
 
-# 커튼 전환 효과
-def draw_opening():
-    # 닫힌 커튼 배경
-    draw_background(ready_image)
+# 부드러운 움직임 계산
+def smooth_step(progress):
+    return progress * progress * (3.0 - 2.0 * progress)
 
-    # 진행률 0.0 ~ 1.0
+
+# 커튼 열림 애니메이션
+def draw_opening():
+
+    # 무대 앞 배경
+    draw_background(play_image)
+
+    # 애니메이션 진행률
     progress = min(
         opening_time / OPENING_DURATION,
         1.0
     )
 
-    # 열린 무대를 점점 선명하게 표시
-    play_image.opacify(progress)
-    draw_background(play_image)
+    # 부드러운 가속 및 감속
+    smooth = smooth_step(progress)
+
+    # 커튼 이동 거리
+    move_distance = CURTAIN_MOVE_DISTANCE * smooth
+
+    # 왼쪽 커튼 위치
+    left_x = SCREEN_WIDTH / 2 - move_distance
+
+    # 오른쪽 커튼 위치
+    right_x = SCREEN_WIDTH / 2 + move_distance
+
+    # 왼쪽 커튼 출력
+    curtain_left.draw(
+        left_x,
+        SCREEN_HEIGHT / 2,
+        SCREEN_WIDTH,
+        SCREEN_HEIGHT
+    )
+
+    # 오른쪽 커튼 출력
+    curtain_right.draw(
+        right_x,
+        SCREEN_HEIGHT / 2 + 20,
+        SCREEN_WIDTH,
+        SCREEN_HEIGHT
+    )
 
 
 # 공연 진행 화면
 def draw_play():
-    play_image.opacify(1.0)
+
+    # 커튼 없이 무대 앞 배경만 출력
     draw_background(play_image)
 
     guide_font.draw(
@@ -222,7 +271,7 @@ def draw_play():
     )
 
 
-# 화면 출력
+# 전체 화면 출력
 def draw():
     clear_canvas()
 
@@ -245,27 +294,40 @@ def draw():
 def main():
     global running, game_state
     global title_image, ready_image, play_image
+    global curtain_left, curtain_right
     global button_normal, button_hover, button_pressed
     global mouse, dialogue, guide_font
-    global is_hover, is_pressed
+    global is_hover, is_pressed, opening_time
 
     # 게임 창 생성
     open_canvas(SCREEN_WIDTH, SCREEN_HEIGHT)
 
-    # 배경 이미지
+    # 타이틀 배경
     title_image = load_image(
         asset_path('background', 'title.png')
     )
 
+    # 무대 뒤 배경
     ready_image = load_image(
         asset_path('background', 'circus_stage_back.png')
     )
 
+    # 무대 앞 배경
     play_image = load_image(
         asset_path('background', 'circus_stage_front.png')
     )
 
-    # 시작 버튼 이미지
+    # 왼쪽 커튼
+    curtain_left = load_image(
+        asset_path('curtains', 'curtain_left_closed.png')
+    )
+
+    # 오른쪽 커튼
+    curtain_right = load_image(
+        asset_path('curtains', 'curtain_right_closed.png')
+    )
+
+    # 시작 버튼
     button_normal = load_image(
         asset_path('ui', 'start_button_normal.png')
     )
@@ -278,26 +340,29 @@ def main():
         asset_path('ui', 'start_button_pressed.png')
     )
 
-    # 폰트
+    # 안내 폰트
     guide_font = load_font(
         'C:/Windows/Fonts/arialbd.ttf',
         28
     )
 
-    # 캐릭터 및 대사
+    # 생쥐 단장
     mouse = Mouse()
+
+    # 대사
     dialogue = Dialogue()
 
-    # 초기 상태
+    # 초기화
     running = True
     game_state = TITLE
     is_hover = False
     is_pressed = False
+    opening_time = 0.0
 
     # 게임 시간
     last_time = get_time()
 
-    # 게임 루프
+    # 메인 루프
     while running:
         current_time = get_time()
         dt = current_time - last_time
