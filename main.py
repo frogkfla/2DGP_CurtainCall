@@ -8,12 +8,13 @@ SCREEN_HEIGHT = 720
 
 # 게임 상태
 TITLE = 0
-STAGE = 1
+READY = 1
+PLAY = 2
 
 game_state = TITLE
 running = True
 
-# 이미지
+# 이미지 및 폰트
 title_image = None
 stage_image = None
 
@@ -21,9 +22,11 @@ button_normal = None
 button_hover = None
 button_pressed = None
 
+guide_font = None
+
 # 버튼 위치 및 크기
 BUTTON_X = 640
-BUTTON_Y = 100
+BUTTON_Y = 140
 BUTTON_WIDTH = 400
 BUTTON_HEIGHT = 133
 
@@ -63,12 +66,16 @@ def handle_events():
         if event.type == SDL_QUIT:
             running = False
 
-        # ESC 키 종료
+        # 키보드 입력
         elif event.type == SDL_KEYDOWN:
             if event.key == SDLK_ESCAPE:
                 running = False
 
-        # 타이틀 화면에서만 버튼 입력 처리
+            elif event.key == SDLK_SPACE:
+                if game_state == READY:
+                    game_state = PLAY
+
+        # 타이틀 화면에서만 마우스 버튼 처리
         if game_state != TITLE:
             continue
 
@@ -99,7 +106,7 @@ def handle_events():
                 is_hover = is_mouse_on_button(mouse_x, mouse_y)
 
                 if is_pressed and is_hover:
-                    game_state = STAGE
+                    game_state = READY
 
                 is_pressed = False
 
@@ -144,9 +151,26 @@ def draw_title():
     draw_start_button()
 
 
-# 무대 화면
-def draw_stage():
+# 공연 준비 화면
+def draw_ready():
     draw_background(stage_image)
+
+    guide_font.draw(
+        30, 660,
+        'READY - PRESS SPACE TO START',
+        (255, 245, 210)
+    )
+
+
+# 공연 진행 화면
+def draw_play():
+    draw_background(stage_image)
+
+    guide_font.draw(
+        30, 660,
+        'PLAY - PERFORMANCE STARTED',
+        (255, 245, 210)
+    )
 
 
 # 게임 화면 그리기
@@ -156,8 +180,11 @@ def draw():
     if game_state == TITLE:
         draw_title()
 
-    elif game_state == STAGE:
-        draw_stage()
+    elif game_state == READY:
+        draw_ready()
+
+    elif game_state == PLAY:
+        draw_play()
 
     update_canvas()
 
@@ -167,6 +194,7 @@ def main():
     global running, game_state
     global title_image, stage_image
     global button_normal, button_hover, button_pressed
+    global guide_font
     global is_hover, is_pressed
 
     open_canvas(SCREEN_WIDTH, SCREEN_HEIGHT)
@@ -193,6 +221,12 @@ def main():
         asset_path('ui', 'start_button_pressed.png')
     )
 
+    # 안내 문구 폰트
+    guide_font = load_font(
+        'C:/Windows/Fonts/arialbd.ttf', 28
+    )
+
+    # 초기 상태
     running = True
     game_state = TITLE
     is_hover = False
