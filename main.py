@@ -1,6 +1,7 @@
 
 from pico2d import *
 import os
+import math
 
 from mouse import Mouse
 from dialogue import Dialogue
@@ -20,7 +21,10 @@ TUTORIAL = 3
 PLAY = 4
 TUTORIAL_PREP = 5
 TUTORIAL_PLAY = 6
+CHAPTER1_INTRO = 7
+CHAPTER1_PREP = 8
 TUTORIAL_PLATFORM_SURFACE_OFFSET = 2
+GREETING_DURATION = 0.9
 
 game_state = TITLE
 running = True
@@ -44,9 +48,13 @@ tutorial = None
 tutorial_prep = None
 game_ui = None
 guide_font = None
-control_hint_font = None
+control_dialogue_font = None
 mouse_ui_image = None
 control_dialogue_image = None
+tutorial_end_dialogue = None
+greeting_active = False
+greeting_time = 0.0
+greeting_completed = False
 
 # 시작 버튼
 BUTTON_X = 640
@@ -88,6 +96,7 @@ def is_mouse_on_button(x, y):
 def handle_events():
     global running, game_state
     global is_hover, is_pressed, opening_time
+    global greeting_active, greeting_time, greeting_completed
 
     for event in get_events():
 
@@ -134,6 +143,36 @@ def handle_events():
                             opening_time = 0.0
                             game_state = OPENING
 
+            # 튜토리얼 공연 조작
+            elif game_state == TUTORIAL_PLAY:
+                if greeting_completed:
+                    if event.key == SDLK_SPACE:
+                        tutorial_end_dialogue.next()
+                    elif event.key in (SDLK_RETURN, SDLK_KP_ENTER):
+                        if tutorial_end_dialogue.finished:
+                            tutorial_end_dialogue.lines = [
+                                '튜토리얼 공연을 멋지게 마쳤어!',
+                                '이제 1장 첫 정식 공연을 준비해 보자!',
+                                '첫 무대는 강아지의 링 통과 공연이야.',
+                                '좋아, 공연 준비를 시작하자!'
+                            ]
+                            tutorial_end_dialogue.line_index = 0
+                            tutorial_end_dialogue.visible_count = 0
+                            tutorial_end_dialogue.finished = False
+                            tutorial_end_dialogue.char_timer = 0.0
+                            tutorial_end_dialogue.finished_hint = 'ENTER : 1장 준비 시작'
+                            game_state = CHAPTER1_INTRO
+                elif event.key == SDLK_SPACE and not greeting_active:
+                    greeting_active = True
+                    greeting_time = 0.0
+
+            elif game_state == CHAPTER1_INTRO:
+                if event.key == SDLK_SPACE:
+                    tutorial_end_dialogue.next()
+                elif event.key in (SDLK_RETURN, SDLK_KP_ENTER):
+                    if tutorial_end_dialogue.finished:
+                        game_state = CHAPTER1_PREP
+
         # 단상 드래그 처리
         if game_state == TUTORIAL_PREP:
             tutorial_prep.handle_event(event)
@@ -178,6 +217,7 @@ def handle_events():
 
 def update(dt):
     global game_state, opening_time
+    global greeting_active, greeting_time, greeting_completed
 
     if game_state == READY:
         mouse.update()
@@ -204,6 +244,21 @@ def update(dt):
 
     elif game_state == TUTORIAL_PLAY:
         mouse.update()
+
+        if greeting_active:
+            greeting_time += dt
+            if greeting_time >= GREETING_DURATION:
+                greeting_time = GREETING_DURATION
+                greeting_active = False
+                greeting_completed = True
+                game_ui.reward_success()
+
+        if greeting_completed:
+            tutorial_end_dialogue.update(dt)
+
+    elif game_state == CHAPTER1_INTRO:
+        mouse.update()
+        tutorial_end_dialogue.update(dt)
 
 
 # --------------------------------------------------
@@ -341,20 +396,69 @@ def draw_tutorial_play():
         tutorial_prep.prop_height
     )
 
+    greeting_bob = 0
+    if greeting_active:
+        progress = greeting_time / GREETING_DURATION
+        greeting_bob = math.sin(progress * math.pi) * 18
+
     mouse.draw(
         tutorial_prep.target_x,
-        tutorial_prep.target_y + TUTORIAL_PLATFORM_SURFACE_OFFSET
+        tutorial_prep.target_y + TUTORIAL_PLATFORM_SURFACE_OFFSET + greeting_bob
     )
 
+    if greeting_completed:
+        draw_tutorial_control_bubble(tutorial_end_dialogue)
+    else:
+        draw_tutorial_control_bubble()
+
+
+def draw_tutorial_control_bubble(dialogue_to_show=None):
     # 왼쪽 아래 조작 안내 UI
     control_dialogue_image.draw(252, 115, 300, 123)
     mouse_ui_image.draw(75, 72, 120, 80)
-    control_hint_font.draw(
-        143,
-        123,
-        'SPACE : 인사하기',
-        (104, 58, 39)
+
+    if dialogue_to_show is None:
+        control_dialogue_font.draw(
+            135,
+            123,
+            'SPACE를 눌러 인사해 봐!',
+            (104, 58, 39)
+        )
+        return
+
+    visible_text = dialogue_to_show.get_wrapped_text()[:dialogue_to_show.visible_count]
+    for i, text_line in enumerate(visible_text.split('\n')):
+        if text_line:
+            dialogue_to_show.font.draw(
+                135,
+                123 - i * 18,
+                text_line,
+                (104, 58, 39)
+            )
+
+    hint = (
+        'ENTER : 완료'
+        if dialogue_to_show.finished
+        else 'SPACE : 계속'
     )
+    tutorial_end_dialogue.hint_font.draw(
+        290,
+        99,
+        hint,
+        (125, 85, 60)
+    )
+
+
+def draw_chapter1_intro():
+    draw_background(ready_image)
+    mouse.draw()
+    tutorial_end_dialogue.draw()
+
+
+def draw_chapter1_prep():
+    draw_background(ready_image)
+    game_ui.draw()
+    mouse.draw()
 
 
 # --------------------------------------------------
@@ -385,6 +489,12 @@ def draw():
     elif game_state == TUTORIAL_PLAY:
         draw_tutorial_play()
 
+    elif game_state == CHAPTER1_INTRO:
+        draw_chapter1_intro()
+
+    elif game_state == CHAPTER1_PREP:
+        draw_chapter1_prep()
+
     update_canvas()
 
 
@@ -398,8 +508,10 @@ def main():
     global curtain_left, curtain_right
     global button_normal, button_hover, button_pressed
     global mouse, dialogue, tutorial, tutorial_prep, game_ui
-    global guide_font, control_hint_font
+    global guide_font
+    global control_dialogue_font
     global mouse_ui_image, control_dialogue_image
+    global tutorial_end_dialogue
     global is_hover, is_pressed, opening_time
 
     open_canvas(SCREEN_WIDTH, SCREEN_HEIGHT)
@@ -451,10 +563,10 @@ def main():
         'C:/Windows/Fonts/arialbd.ttf',
         28
     )
-    control_hint_font = load_font(
+    control_dialogue_font = load_font(
         os.path.join(
             os.path.dirname(os.path.abspath(__file__)),
-            'assets', 'fonts', 'Hakgyoansim Dunggeunmiso TTF B.ttf'
+            'assets', 'fonts', 'Griun_Fromsol-Rg.ttf'
         ),
         16
     )
@@ -466,6 +578,14 @@ def main():
     tutorial = Tutorial()
     tutorial_prep = TutorialPrep()
     game_ui = GameUI()
+    tutorial_end_dialogue = Dialogue()
+    tutorial_end_dialogue.lines = [
+        '멋진 인사였어!',
+        '오! 관객이 별 하나를 줬어!',
+        '튜토리얼 공연은 여기서 끝이야.',
+        '다시 무대 뒤로 돌아가자!'
+    ]
+    tutorial_end_dialogue.finished_hint = 'ENTER : 튜토리얼 완료'
 
     # 초기 상태
     running = True
