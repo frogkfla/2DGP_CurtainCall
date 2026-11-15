@@ -56,8 +56,6 @@ is_pressed = False
 opening_time = 0.0
 OPENING_DURATION = 2.0
 CURTAIN_MOVE_DISTANCE = SCREEN_WIDTH / 2
-
-# 기존에 조정한 오른쪽 커튼 높이 유지
 RIGHT_CURTAIN_Y_OFFSET = 20
 
 
@@ -84,7 +82,7 @@ def is_mouse_on_button(x, y):
 
 def handle_events():
     global running, game_state
-    global is_hover, is_pressed
+    global is_hover, is_pressed, opening_time
 
     for event in get_events():
 
@@ -92,14 +90,13 @@ def handle_events():
             running = False
             continue
 
-        # ESC 종료
         if event.type == SDL_KEYDOWN:
 
             if event.key == SDLK_ESCAPE:
                 running = False
                 continue
 
-            # 무대 뒤 - 게임 설명
+            # 무대 뒤 게임 설명
             if game_state == READY:
 
                 if event.key == SDLK_SPACE:
@@ -109,7 +106,7 @@ def handle_events():
                     if dialogue.finished:
                         game_state = TUTORIAL
 
-            # 무대 뒤 - UI 튜토리얼
+            # 무대 뒤 UI 설명
             elif game_state == TUTORIAL:
 
                 if event.key == SDLK_SPACE:
@@ -119,7 +116,20 @@ def handle_events():
                     if tutorial.finished:
                         game_state = TUTORIAL_PREP
 
-        # 튜토리얼 발판 배치
+            # 튜토리얼 공연 준비
+            elif game_state == TUTORIAL_PREP:
+
+                if tutorial_prep.completed:
+
+                    if event.key == SDLK_SPACE:
+                        tutorial_prep.complete_dialogue.next()
+
+                    elif event.key in (SDLK_RETURN, SDLK_KP_ENTER):
+                        if tutorial_prep.complete_dialogue.finished:
+                            opening_time = 0.0
+                            game_state = OPENING
+
+        # 단상 드래그 처리
         if game_state == TUTORIAL_PREP:
             tutorial_prep.handle_event(event)
             continue
@@ -128,14 +138,12 @@ def handle_events():
         if game_state != TITLE:
             continue
 
-        # 시작 버튼 마우스 호버
         if event.type == SDL_MOUSEMOTION:
             is_hover = is_mouse_on_button(
                 event.x,
                 SCREEN_HEIGHT - event.y
             )
 
-        # 시작 버튼 누르기
         elif event.type == SDL_MOUSEBUTTONDOWN:
 
             if event.button == SDL_BUTTON_LEFT:
@@ -145,7 +153,6 @@ def handle_events():
                 )
                 is_pressed = is_hover
 
-        # 시작 버튼 클릭 완료
         elif event.type == SDL_MOUSEBUTTONUP:
 
             if event.button == SDL_BUTTON_LEFT:
@@ -177,6 +184,7 @@ def update(dt):
 
     elif game_state == TUTORIAL_PREP:
         mouse.update()
+        tutorial_prep.update(dt)
 
     elif game_state == OPENING:
         opening_time += dt
@@ -190,7 +198,7 @@ def update(dt):
 
 
 # --------------------------------------------------
-# 공통 배경
+# 화면 그리기
 # --------------------------------------------------
 
 def draw_background(image):
@@ -201,10 +209,6 @@ def draw_background(image):
         SCREEN_HEIGHT
     )
 
-
-# --------------------------------------------------
-# 타이틀 화면
-# --------------------------------------------------
 
 def draw_start_button():
     if is_pressed and is_hover:
@@ -227,19 +231,11 @@ def draw_title():
     draw_start_button()
 
 
-# --------------------------------------------------
-# 무대 뒤 - 게임 설명
-# --------------------------------------------------
-
 def draw_ready():
     draw_background(ready_image)
     mouse.draw()
     dialogue.draw()
 
-
-# --------------------------------------------------
-# 무대 뒤 - UI 설명
-# --------------------------------------------------
 
 def draw_tutorial():
     draw_background(ready_image)
@@ -247,19 +243,15 @@ def draw_tutorial():
     tutorial.draw(game_ui)
 
 
-# --------------------------------------------------
-# 무대 뒤 - 튜토리얼 공연 준비
-# --------------------------------------------------
-
 def draw_tutorial_prep():
     draw_background(ready_image)
-
     tutorial_prep.draw()
     mouse.draw()
+    tutorial_prep.draw_dialogue()
 
 
 # --------------------------------------------------
-# 커튼 열림 애니메이션
+# 커튼 애니메이션
 # --------------------------------------------------
 
 def smooth_step(progress):
@@ -269,11 +261,14 @@ def smooth_step(progress):
 def draw_opening():
     draw_background(play_image)
 
-    progress = min(
-        opening_time / OPENING_DURATION,
-        1.0
+    tutorial_prep.image.draw(
+        tutorial_prep.target_x,
+        tutorial_prep.target_y,
+        tutorial_prep.prop_width,
+        tutorial_prep.prop_height
     )
 
+    progress = min(opening_time / OPENING_DURATION, 1.0)
     smooth = smooth_step(progress)
     move_distance = CURTAIN_MOVE_DISTANCE * smooth
 
@@ -296,17 +291,25 @@ def draw_opening():
 
 
 # --------------------------------------------------
-# 무대 앞 - 공연
+# 무대 앞 공연
 # --------------------------------------------------
 
 def draw_play():
     draw_background(play_image)
+
+    tutorial_prep.image.draw(
+        tutorial_prep.target_x,
+        tutorial_prep.target_y,
+        tutorial_prep.prop_width,
+        tutorial_prep.prop_height
+    )
+
     game_ui.draw()
 
     guide_font.draw(
         30,
         500,
-        'PLAY - PERFORMANCE STARTED',
+        'TUTORIAL PERFORMANCE',
         (255, 245, 210)
     )
 
@@ -407,7 +410,6 @@ def main():
 
     is_hover = False
     is_pressed = False
-
     opening_time = 0.0
 
     # 메인 루프

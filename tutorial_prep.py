@@ -1,25 +1,26 @@
+
 from pico2d import *
 import os
+
+from dialogue import Dialogue
 
 
 class TutorialPrep:
     def __init__(self):
-        # 발판 이미지
         base = os.path.dirname(os.path.abspath(__file__))
-        image_path = os.path.join(
-            base, 'assets', 'props', 'platform.png'
-        )
+        image_path = os.path.join(base, 'assets', 'props', 'platform.png')
+
         self.image = load_image(image_path)
 
-        # 발판 시작 위치
+        # 단상 시작 위치
         self.prop_x = 250
         self.prop_y = 260
 
-        # 발판 크기
+        # 단상 크기
         self.prop_width = 300
         self.prop_height = 200
 
-        # 발판을 놓을 목표 위치
+        # 단상 목표 위치
         self.target_x = 640
         self.target_y = 260
 
@@ -28,14 +29,20 @@ class TutorialPrep:
         self.drag_offset_x = 0
         self.drag_offset_y = 0
 
-        # 준비 완료 여부
+        # 배치 완료 여부
         self.completed = False
+
+        # 배치 완료 후 생쥐 단장의 대화
+        self.complete_dialogue = Dialogue()
+        self.complete_dialogue.lines = [
+            "좋아! 단상이 제자리에 놓였군!",
+            "이제 정말 준비가 끝났어! ENTER를 눌러 공연을 시작하자!"
+        ]
 
     def is_on_prop(self, x, y):
         return (
             self.prop_x - self.prop_width / 2 <= x <= self.prop_x + self.prop_width / 2
-            and
-            self.prop_y - self.prop_height / 2 <= y <= self.prop_y + self.prop_height / 2
+            and self.prop_y - self.prop_height / 2 <= y <= self.prop_y + self.prop_height / 2
         )
 
     def handle_event(self, event):
@@ -71,8 +78,11 @@ class TutorialPrep:
                     self.prop_y = self.target_y
                     self.completed = True
 
+    def update(self, dt):
+        if self.completed:
+            self.complete_dialogue.update(dt)
+
     def draw(self):
-        # 발판 이미지 출력
         self.image.draw(
             self.prop_x,
             self.prop_y,
@@ -80,7 +90,6 @@ class TutorialPrep:
             self.prop_height
         )
 
-        # 목표 위치 표시
         if not self.completed:
             draw_rectangle(
                 self.target_x - self.prop_width / 2,
@@ -88,3 +97,7 @@ class TutorialPrep:
                 self.target_x + self.prop_width / 2,
                 self.target_y + self.prop_height / 2
             )
+
+    def draw_dialogue(self):
+        if self.completed:
+            self.complete_dialogue.draw()
