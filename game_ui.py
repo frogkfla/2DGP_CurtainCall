@@ -19,10 +19,10 @@ class GameUI:
             os.path.join(ui_dir, 'boredom_gauge_fill.png')
         )
         self.star_empty = load_image(
-            os.path.join(ui_dir, 'star_empty.png')
+            os.path.join(ui_dir, 'star2_empty.png')
         )
         self.star_fill = load_image(
-            os.path.join(ui_dir, 'star_fill.png')
+            os.path.join(ui_dir, 'star2_fill.png')
         )
 
         self.font = load_font(
@@ -56,10 +56,15 @@ class GameUI:
         self.fill_height = 70
 
         # 만족도 별
-        self.star_center_x = 640
-        self.star_y = 340
-        self.star_size = 100
-        self.star_gap = 125
+        self.star_center_x = (
+            self.gauge_x
+            - self.gauge_width / 2
+            + self.gauge_width * 0.25
+            + 8
+        )
+        self.star_y = self.gauge_y + self.gauge_height / 2 - 30
+        self.star_size = 40
+        self.star_gap = 33
 
         self.performance_name = '강아지의 링 통과'
         self.boredom = 0.0
@@ -72,9 +77,10 @@ class GameUI:
     def add_boredom(self, amount):
         self.boredom = min(100.0, max(0.0, self.boredom + amount))
 
-    def reward_success(self, stars):
-        self.stars = max(0, min(3, stars))
-        self.add_boredom(-self.stars * 5)
+    def reward_success(self):
+        if self.stars < 3:
+            self.stars += 1
+            self.add_boredom(-5)
 
     def is_failed(self):
         return self.boredom >= 100.0
@@ -173,14 +179,16 @@ class GameUI:
             x = self.star_center_x + (i - 1) * self.star_gap
 
             image = self.star_fill if i < count else self.star_empty
+            image_width = self.star_size * image.w / image.h
 
             image.draw(
                 x,
                 self.star_y,
-                self.star_size,
+                image_width,
                 self.star_size
             )
 
     def draw(self, name=None, boredom=None):
         self.draw_title(name)
         self.draw_gauge(boredom)
+        self.draw_stars()
