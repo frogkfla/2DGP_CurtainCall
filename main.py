@@ -5,7 +5,7 @@ import os
 from mouse import Mouse
 from dialogue import Dialogue
 from game_ui import GameUI
-from tutorial import Tutorial
+from tutorial import Tutorial, TUTORIAL_PERFORMANCE_NAME
 from tutorial_prep import TutorialPrep
 
 
@@ -19,6 +19,8 @@ OPENING = 2
 TUTORIAL = 3
 PLAY = 4
 TUTORIAL_PREP = 5
+TUTORIAL_PLAY = 6
+TUTORIAL_PLATFORM_SURFACE_OFFSET = 2
 
 game_state = TITLE
 running = True
@@ -187,14 +189,18 @@ def update(dt):
         tutorial_prep.update(dt)
 
     elif game_state == OPENING:
+        mouse.update()
         opening_time += dt
 
         if opening_time >= OPENING_DURATION:
             opening_time = OPENING_DURATION
-            game_state = PLAY
+            game_state = TUTORIAL_PLAY
 
     elif game_state == PLAY:
         pass
+
+    elif game_state == TUTORIAL_PLAY:
+        mouse.update()
 
 
 # --------------------------------------------------
@@ -245,6 +251,7 @@ def draw_tutorial():
 
 def draw_tutorial_prep():
     draw_background(ready_image)
+    game_ui.draw(TUTORIAL_PERFORMANCE_NAME)
     tutorial_prep.draw()
     mouse.draw()
     tutorial_prep.draw_dialogue()
@@ -260,12 +267,18 @@ def smooth_step(progress):
 
 def draw_opening():
     draw_background(play_image)
+    game_ui.draw(TUTORIAL_PERFORMANCE_NAME)
 
     tutorial_prep.image.draw(
         tutorial_prep.target_x,
         tutorial_prep.target_y,
         tutorial_prep.prop_width,
         tutorial_prep.prop_height
+    )
+
+    mouse.draw(
+        tutorial_prep.target_x,
+        tutorial_prep.target_y + TUTORIAL_PLATFORM_SURFACE_OFFSET
     )
 
     progress = min(opening_time / OPENING_DURATION, 1.0)
@@ -314,6 +327,23 @@ def draw_play():
     )
 
 
+def draw_tutorial_play():
+    draw_background(play_image)
+    game_ui.draw(TUTORIAL_PERFORMANCE_NAME)
+
+    tutorial_prep.image.draw(
+        tutorial_prep.target_x,
+        tutorial_prep.target_y,
+        tutorial_prep.prop_width,
+        tutorial_prep.prop_height
+    )
+
+    mouse.draw(
+        tutorial_prep.target_x,
+        tutorial_prep.target_y + TUTORIAL_PLATFORM_SURFACE_OFFSET
+    )
+
+
 # --------------------------------------------------
 # 전체 화면 그리기
 # --------------------------------------------------
@@ -338,6 +368,9 @@ def draw():
 
     elif game_state == PLAY:
         draw_play()
+
+    elif game_state == TUTORIAL_PLAY:
+        draw_tutorial_play()
 
     update_canvas()
 

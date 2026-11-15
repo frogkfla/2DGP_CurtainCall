@@ -49,7 +49,13 @@ class Mouse:
             self.frame_time = 0.0
 
     # 생쥐 단장 출력
-    def draw(self):
+    def draw(self, x=None, feet_y=None):
+        if x is None:
+            x = self.x
+
+        if feet_y is None:
+            feet_y = self.feet_y
+
         # 현재 프레임 위치
         frame_x = round(
             self.frame * self.cell_width
@@ -65,7 +71,7 @@ class Mouse:
         )
 
         # 발 위치 기준으로 배치
-        draw_y = self.feet_y + self.height / 2
+        draw_y = feet_y + self.height / 2
 
         # 좌우 반전하여 출력
         self.image.clip_composite_draw(
@@ -75,7 +81,7 @@ class Mouse:
             self.crop_height,
             0,
             'h',
-            self.x,
+            x,
             draw_y,
             self.width,
             self.height

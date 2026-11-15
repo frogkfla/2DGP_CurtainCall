@@ -26,6 +26,7 @@ class GameUI:
 
         self.font = load_font('C:/Windows/Fonts/malgunbd.ttf', 15)
         self.small_font = load_font('C:/Windows/Fonts/malgun.ttf', 14)
+        self.caption_font = load_font('C:/Windows/Fonts/malgunbd.ttf', 11)
 
         # 공연명: 기존에 줄인 크기 유지
         self.title_x = 160
@@ -69,6 +70,8 @@ class GameUI:
         return self.boredom >= 100.0
 
     def draw_title(self, name=None):
+        is_tutorial = name is not None
+
         if name is None:
             name = self.performance_name
 
@@ -86,6 +89,26 @@ class GameUI:
             text_x, text_y, name, (104, 58, 39)
         )
 
+        if is_tutorial:
+            chapter_x = (
+                self.title_x
+                - self.title_width / 2
+                + self.title_width * 0.09
+            )
+
+            self.caption_font.draw(
+                chapter_x,
+                text_y,
+                '0장',
+                (104, 58, 39)
+            )
+            self.caption_font.draw(
+                text_x,
+                text_y + 18,
+                '튜토리얼',
+                (104, 58, 39)
+            )
+
     def draw_gauge(self, value=None):
         if value is None:
             value = self.boredom
@@ -100,16 +123,16 @@ class GameUI:
             self.gauge_height
         )
 
+        frame_left = self.gauge_x - self.gauge_width / 2
+
+        bar_left = frame_left + self.gauge_width * self.fill_left
+        bar_max_width = self.gauge_width * (
+            self.fill_right - self.fill_left
+        )
+        bar_width = bar_max_width * value / 100.0
+
         # 2. 빨간 막대를 프레임 위에 그리기
         if value > 0:
-            frame_left = self.gauge_x - self.gauge_width / 2
-
-            bar_left = frame_left + self.gauge_width * self.fill_left
-            bar_max_width = self.gauge_width * (
-                self.fill_right - self.fill_left
-            )
-
-            bar_width = bar_max_width * value / 100.0
             bar_x = bar_left + bar_width / 2
 
             # 원본 이미지 전체를 사용해 가로로 늘려 그리기
@@ -120,12 +143,14 @@ class GameUI:
                 self.fill_height
             )
 
+        label_x = bar_left + bar_max_width * 0.72
+
         # 3. 퍼센트 글자는 가장 위에 표시
-        self.small_font.draw(
-            self.gauge_x - 75,
-            self.gauge_y - 7,
+        self.font.draw(
+            label_x,
+            self.gauge_y,
             f'지루함 {int(value)}%',
-            (105, 57, 37)
+            (104, 58, 39)
         )
 
     def draw_stars(self, count=None):
