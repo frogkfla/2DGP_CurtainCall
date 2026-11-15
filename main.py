@@ -44,6 +44,9 @@ tutorial = None
 tutorial_prep = None
 game_ui = None
 guide_font = None
+control_hint_font = None
+mouse_ui_image = None
+control_dialogue_image = None
 
 # 시작 버튼
 BUTTON_X = 640
@@ -343,6 +346,16 @@ def draw_tutorial_play():
         tutorial_prep.target_y + TUTORIAL_PLATFORM_SURFACE_OFFSET
     )
 
+    # 왼쪽 아래 조작 안내 UI
+    control_dialogue_image.draw(252, 115, 300, 123)
+    mouse_ui_image.draw(75, 72, 120, 80)
+    control_hint_font.draw(
+        143,
+        123,
+        'SPACE : 인사하기',
+        (104, 58, 39)
+    )
+
 
 # --------------------------------------------------
 # 전체 화면 그리기
@@ -385,7 +398,9 @@ def main():
     global curtain_left, curtain_right
     global button_normal, button_hover, button_pressed
     global mouse, dialogue, tutorial, tutorial_prep, game_ui
-    global guide_font, is_hover, is_pressed, opening_time
+    global guide_font, control_hint_font
+    global mouse_ui_image, control_dialogue_image
+    global is_hover, is_pressed, opening_time
 
     open_canvas(SCREEN_WIDTH, SCREEN_HEIGHT)
 
@@ -424,10 +439,24 @@ def main():
         asset_path('ui', 'start_button_pressed.png')
     )
 
+    mouse_ui_image = load_image(
+        asset_path('ui', 'mouse_ui.png')
+    )
+    control_dialogue_image = load_image(
+        asset_path('ui', 'dialogue_flipped.png')
+    )
+
     # 안내 폰트
     guide_font = load_font(
         'C:/Windows/Fonts/arialbd.ttf',
         28
+    )
+    control_hint_font = load_font(
+        os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            'assets', 'fonts', 'Hakgyoansim Dunggeunmiso TTF B.ttf'
+        ),
+        16
     )
 
     # 게임 객체 생성
