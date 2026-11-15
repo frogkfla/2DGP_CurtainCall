@@ -336,7 +336,8 @@ def draw_opening():
 
     mouse.draw(
         tutorial_prep.target_x,
-        tutorial_prep.target_y + TUTORIAL_PLATFORM_SURFACE_OFFSET
+        tutorial_prep.target_y + TUTORIAL_PLATFORM_SURFACE_OFFSET,
+        row=1
     )
 
     progress = min(opening_time / OPENING_DURATION, 1.0)
@@ -403,7 +404,8 @@ def draw_tutorial_play():
 
     mouse.draw(
         tutorial_prep.target_x,
-        tutorial_prep.target_y + TUTORIAL_PLATFORM_SURFACE_OFFSET + greeting_bob
+        tutorial_prep.target_y + TUTORIAL_PLATFORM_SURFACE_OFFSET + greeting_bob,
+        row=1
     )
 
     if greeting_completed:

@@ -49,7 +49,7 @@ class Mouse:
             self.frame_time = 0.0
 
     # 생쥐 단장 출력
-    def draw(self, x=None, feet_y=None):
+    def draw(self, x=None, feet_y=None, row=0):
         if x is None:
             x = self.x
 
@@ -64,11 +64,11 @@ class Mouse:
         # 이미지 자르기 좌표
         clip_x = frame_x + self.crop_left
 
-        clip_y = (
-            self.image.h
-            - self.crop_top
-            - self.crop_height
-        )
+        row_crop_top = self.crop_top
+        if row == 1:
+            row_crop_top = 565
+
+        clip_y = self.image.h - row_crop_top - self.crop_height
 
         # 발 위치 기준으로 배치
         draw_y = feet_y + self.height / 2
