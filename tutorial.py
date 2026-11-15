@@ -16,6 +16,7 @@ class Tutorial:
             "공연을 잘하면 별을 받을 수 있어! 별이 많을수록 지루함이 더 줄어들지!",
             "이제 직접 공연을 준비해 보자! 먼저 발판을 무대 중앙에 놓아 줄래?"
         ]
+        self.dialogue.finished_hint = 'ENTER : 발판 놓기'
 
         self.dialogue.line_index = 0
         self.dialogue.visible_count = 0

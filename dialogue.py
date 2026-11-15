@@ -17,6 +17,7 @@ class Dialogue:
         self.line_index = 0
         self.visible_count = 0
         self.finished = False
+        self.finished_hint = 'ENTER : 계속하기'
 
         self.char_interval = 0.045
         self.char_timer = 0.0
@@ -148,30 +149,31 @@ class Dialogue:
         left = self.x - self.width / 2
         bottom = self.y - self.height / 2
 
+        name_x = left + self.width * 0.17
         text_x = left + self.width * 0.13
 
         name_y = (
             bottom
-            + self.height * 0.68
+            + self.height * 0.72
             + self.name_offset_y
         )
 
         dialogue_y = (
             bottom
-            + self.height * 0.47
+            + self.height * 0.55
             + self.dialogue_offset_y
         )
 
-        hint_x = left + self.width * 0.64
+        hint_x = left + self.width * 0.73
 
         hint_y = (
             bottom
-            + self.height * 0.20
+            + self.height * 0.27
             + self.hint_offset_y
         )
 
         self.name_font.draw(
-            text_x,
+            name_x,
             name_y,
             "생쥐 단장",
             (105, 57, 37)
@@ -190,11 +192,7 @@ class Dialogue:
                     (75, 48, 35)
                 )
 
-        hint_text = (
-            "ENTER : 커튼 열기"
-            if self.finished
-            else "SPACE : 계속하기"
-        )
+        hint_text = self.finished_hint if self.finished else "SPACE : 계속하기"
 
         self.hint_font.draw(
             hint_x,

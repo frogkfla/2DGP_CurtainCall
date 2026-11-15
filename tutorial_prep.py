@@ -38,6 +38,7 @@ class TutorialPrep:
             "좋아! 단상이 제자리에 놓였군!",
             "이제 정말 준비가 끝났어! ENTER를 눌러 공연을 시작하자!"
         ]
+        self.complete_dialogue.finished_hint = 'ENTER : 커튼 열기'
 
     def is_on_prop(self, x, y):
         return (

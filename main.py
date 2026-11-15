@@ -433,6 +433,7 @@ def main():
     # 게임 객체 생성
     mouse = Mouse()
     dialogue = Dialogue()
+    dialogue.finished_hint = 'ENTER : 튜토리얼 시작'
     tutorial = Tutorial()
     tutorial_prep = TutorialPrep()
     game_ui = GameUI()
