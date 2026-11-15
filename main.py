@@ -152,9 +152,9 @@ def handle_events():
                         if tutorial_end_dialogue.finished:
                             tutorial_end_dialogue.lines = [
                                 '튜토리얼 공연을 멋지게 마쳤어!',
-                                '이제 1장 첫 정식 공연을 준비해 보자!',
-                                '첫 무대는 강아지의 링 통과 공연이야.',
-                                '좋아, 공연 준비를 시작하자!'
+                                '이제부터는 정식 공연을 준비해야 해.',
+                                '무대가 어떻게 진행되는지 알았으니 잘 할 수 있겠지?',
+                                '좋아, 이제 첫 무대를 장식하러 가보자고!'
                             ]
                             tutorial_end_dialogue.line_index = 0
                             tutorial_end_dialogue.visible_count = 0
