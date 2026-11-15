@@ -28,9 +28,23 @@ class Dialogue:
 
         self.image = load_image(image_path)
 
-        self.font = load_font('C:/Windows/Fonts/gulim.ttc', 19)
-        self.name_font = load_font('C:/Windows/Fonts/malgunbd.ttf', 18)
-        self.hint_font = load_font('C:/Windows/Fonts/malgun.ttf', 13)
+        font_dir = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            'assets', 'fonts'
+        )
+
+        self.font = load_font(
+            os.path.join(font_dir, 'Griun_Fromsol-Rg.ttf'),
+            19
+        )
+        self.name_font = load_font(
+            os.path.join(font_dir, 'Hakgyoansim Dunggeunmiso TTF B.ttf'),
+            18
+        )
+        self.hint_font = load_font(
+            os.path.join(font_dir, 'Hakgyoansim Dunggeunmiso TTF R.ttf'),
+            13
+        )
 
         # 기존 말풍선 위치와 크기 유지
         self.x = 870

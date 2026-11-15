@@ -7,6 +7,7 @@ class GameUI:
     def __init__(self):
         base = os.path.dirname(os.path.abspath(__file__))
         ui_dir = os.path.join(base, 'assets', 'ui')
+        font_dir = os.path.join(base, 'assets', 'fonts')
 
         self.title_image = load_image(
             os.path.join(ui_dir, 'performance_title.png')
@@ -24,9 +25,18 @@ class GameUI:
             os.path.join(ui_dir, 'star_fill.png')
         )
 
-        self.font = load_font('C:/Windows/Fonts/malgunbd.ttf', 15)
-        self.small_font = load_font('C:/Windows/Fonts/malgun.ttf', 14)
-        self.caption_font = load_font('C:/Windows/Fonts/malgunbd.ttf', 11)
+        self.font = load_font(
+            os.path.join(font_dir, '[KIM]WILDgag-BOLD.ttf'),
+            15
+        )
+        self.gauge_font = load_font(
+            os.path.join(font_dir, 'Hakgyoansim Dunggeunmiso TTF B.ttf'),
+            15
+        )
+        self.caption_font = load_font(
+            os.path.join(font_dir, '[KIM]WILDgag-BOLD.ttf'),
+            11
+        )
 
         # 공연명: 기존에 줄인 크기 유지
         self.title_x = 160
@@ -146,7 +156,7 @@ class GameUI:
         label_x = bar_left + bar_max_width * 0.72
 
         # 3. 퍼센트 글자는 가장 위에 표시
-        self.font.draw(
+        self.gauge_font.draw(
             label_x,
             self.gauge_y,
             f'지루함 {int(value)}%',
