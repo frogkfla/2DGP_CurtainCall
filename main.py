@@ -87,14 +87,12 @@ def handle_events():
                 continue
 
             if game_state == READY:
-
                 if event.key == SDLK_SPACE:
                     dialogue.next()
 
                 elif event.key in (SDLK_RETURN, SDLK_KP_ENTER):
                     if dialogue.finished:
-                        opening_time = 0.0
-                        game_state = OPENING
+                        game_state = TUTORIAL
 
             elif game_state == TUTORIAL:
 
@@ -234,7 +232,7 @@ def draw_opening():
 
 def draw_tutorial():
     # 커튼이 열린 무대 앞에서 튜토리얼 진행
-    draw_background(play_image)
+    draw_background(ready_image)
 
     # 생쥐 단장과 기존 말풍선 활용
     mouse.draw()
