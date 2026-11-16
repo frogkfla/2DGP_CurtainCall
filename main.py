@@ -13,6 +13,7 @@ from dog import DogPerformance
 
 SCREEN_WIDTH = 1280
 SCREEN_HEIGHT = 720
+CHAPTER1_PERFORMANCE_NAME = '강아지의 후프 점프'
 
 # 게임 상태
 TITLE = 0
@@ -401,7 +402,11 @@ def draw_opening():
 
 def draw_dog_opening():
     draw_background(play_image)
-    game_ui.draw()
+    game_ui.draw(
+        CHAPTER1_PERFORMANCE_NAME,
+        chapter='1장',
+        subtitle='실전'
+    )
     dog_performance.draw_opening()
 
     progress = min(opening_time / OPENING_DURATION, 1.0)
@@ -473,33 +478,77 @@ def draw_tutorial_play():
         draw_tutorial_control_bubble()
 
 
+def wrap_control_prompt(text, max_width=170):
+    wrapped = []
+    for paragraph in text.split('\n'):
+        line = ''
+        line_width = 0
+        for char in paragraph:
+            if char == ' ':
+                char_width = 5
+            elif ord(char) > 127:
+                char_width = 16
+            else:
+                char_width = 9
+
+            if line and line_width + char_width > max_width:
+                wrapped.append(line.rstrip())
+                line = ''
+                line_width = 0
+
+            line += char
+            line_width += char_width
+
+        if line:
+            wrapped.append(line.rstrip())
+
+    if len(wrapped) > 2:
+        wrapped = wrapped[:2]
+        second_line = wrapped[1].rstrip()
+        while second_line and sum(
+            5 if char == ' ' else (16 if ord(char) > 127 else 9)
+            for char in second_line
+        ) > max_width - 16:
+            second_line = second_line[:-1].rstrip()
+        wrapped[1] = second_line + '…'
+
+    return wrapped
+
+
 def draw_tutorial_control_bubble(dialogue_to_show=None, prompt=None, hint=None):
     # 왼쪽 아래 조작 안내 UI
     control_dialogue_image.draw(252, 115, 300, 123)
     mouse_ui_image.draw(75, 72, 120, 80)
 
     if dialogue_to_show is None:
-        control_dialogue_font.draw(
-            135,
-            123,
-            prompt or 'SPACE를 눌러 인사해 봐!',
-            (104, 58, 39)
+        prompt_lines = wrap_control_prompt(
+            prompt or 'SPACE를 눌러 인사해 봐!'
         )
+        first_line_y = 123 + (len(prompt_lines) - 1) * 9
+        for i, text_line in enumerate(prompt_lines):
+            control_dialogue_font.draw(
+                135,
+                first_line_y - i * 18,
+                text_line,
+                (104, 58, 39)
+            )
         if hint:
             tutorial_end_dialogue.hint_font.draw(
                 290,
-                99,
+                99 if len(prompt_lines) == 1 else 84,
                 hint,
                 (125, 85, 60)
             )
         return
 
     visible_text = dialogue_to_show.get_wrapped_text()[:dialogue_to_show.visible_count]
-    for i, text_line in enumerate(visible_text.split('\n')):
+    prompt_lines = wrap_control_prompt(visible_text)
+    first_line_y = 123 + (len(prompt_lines) - 1) * 9
+    for i, text_line in enumerate(prompt_lines):
         if text_line:
             dialogue_to_show.font.draw(
                 135,
-                123 - i * 18,
+                first_line_y - i * 18,
                 text_line,
                 (104, 58, 39)
             )
@@ -511,7 +560,7 @@ def draw_tutorial_control_bubble(dialogue_to_show=None, prompt=None, hint=None):
     )
     tutorial_end_dialogue.hint_font.draw(
         290,
-        99,
+        99 if len(prompt_lines) <= 1 else 84,
         hint,
         (125, 85, 60)
     )
@@ -525,14 +574,22 @@ def draw_chapter1_intro():
 
 def draw_chapter1_prep():
     draw_background(ready_image)
-    game_ui.draw()
+    game_ui.draw(
+        CHAPTER1_PERFORMANCE_NAME,
+        chapter='1장',
+        subtitle='실전'
+    )
     dog_performance.draw_preparation()
     dog_prep_dialogue.draw()
 
 
 def draw_dog_play():
     draw_background(play_image)
-    game_ui.draw()
+    game_ui.draw(
+        CHAPTER1_PERFORMANCE_NAME,
+        chapter='1장',
+        subtitle='실전'
+    )
     dog_performance.draw_performance()
 
     if dog_performance.phase == 'result':
@@ -543,7 +600,7 @@ def draw_dog_play():
         )
     else:
         draw_tutorial_control_bubble(
-            prompt='강아지가 후프에 가까이 가면 SPACE를 눌러 점프!'
+            prompt='가까이 오면 SPACE로 점프!'
         )
 
 

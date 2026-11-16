@@ -85,8 +85,8 @@ class GameUI:
     def is_failed(self):
         return self.boredom >= 100.0
 
-    def draw_title(self, name=None):
-        is_tutorial = name is not None
+    def draw_title(self, name=None, chapter=None, subtitle=None):
+        is_tutorial = name is not None and chapter is None
 
         if name is None:
             name = self.performance_name
@@ -105,7 +105,7 @@ class GameUI:
             text_x, text_y, name, (104, 58, 39)
         )
 
-        if is_tutorial:
+        if is_tutorial or chapter is not None:
             chapter_x = (
                 self.title_x
                 - self.title_width / 2
@@ -115,15 +115,17 @@ class GameUI:
             self.caption_font.draw(
                 chapter_x,
                 text_y,
-                '0장',
+                chapter or '0장',
                 (104, 58, 39)
             )
-            self.caption_font.draw(
-                text_x,
-                text_y + 18,
-                '튜토리얼',
-                (104, 58, 39)
-            )
+            caption_text = '튜토리얼' if is_tutorial else subtitle
+            if caption_text:
+                self.caption_font.draw(
+                    text_x,
+                    text_y + 18,
+                    caption_text,
+                    (104, 58, 39)
+                )
 
     def draw_gauge(self, value=None):
         if value is None:
@@ -188,7 +190,7 @@ class GameUI:
                 self.star_size
             )
 
-    def draw(self, name=None, boredom=None):
-        self.draw_title(name)
+    def draw(self, name=None, boredom=None, chapter=None, subtitle=None):
+        self.draw_title(name, chapter, subtitle)
         self.draw_gauge(boredom)
         self.draw_stars()
