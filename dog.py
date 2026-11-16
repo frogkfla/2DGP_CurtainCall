@@ -470,18 +470,18 @@ class DogPerformance:
         )
 
     def draw_opening(self):
+        self._draw_dog()
         for hoop in self.hoops:
             self._draw_hoop(
                 hoop['x'], hoop['y'], self.HOOP_WIDTH, self.hoop_height
             )
-        self._draw_dog()
 
     def draw_performance(self, font):
+        # 강아지를 먼저 그려 후프 뒤쪽에 두고, 판정 표시는 가장 위에 그린다.
+        self._draw_dog()
         for hoop in self.hoops:
             self._draw_hoop(
                 hoop['x'], hoop['y'], self.HOOP_WIDTH, self.hoop_height
             )
             if hoop['state'] in ('success', 'failed'):
                 self._draw_feedback(hoop, font)
-
-        self._draw_dog()
