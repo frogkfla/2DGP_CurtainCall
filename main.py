@@ -27,6 +27,7 @@ CHAPTER1_INTRO = 7
 CHAPTER1_PREP = 8
 DOG_OPENING = 9
 DOG_PLAY = 10
+DOG_READY = 11
 TUTORIAL_PLATFORM_SURFACE_OFFSET = 2
 GREETING_DURATION = 0.9
 
@@ -189,6 +190,11 @@ def handle_events():
                             opening_time = 0.0
                             game_state = DOG_OPENING
 
+            elif game_state == DOG_READY:
+                if event.key in (SDLK_RETURN, SDLK_KP_ENTER):
+                    dog_performance.start_performance()
+                    game_state = DOG_PLAY
+
         # 단상 드래그 처리
         if game_state == TUTORIAL_PREP:
             tutorial_prep.handle_event(event)
@@ -292,8 +298,8 @@ def update(dt):
         opening_time += dt
         if opening_time >= OPENING_DURATION:
             opening_time = OPENING_DURATION
-            dog_performance.start_performance()
-            game_state = DOG_PLAY
+            dog_performance.wait_for_start()
+            game_state = DOG_READY
 
     elif game_state == DOG_PLAY:
         dog_performance.update_performance(dt, game_ui)
@@ -604,6 +610,20 @@ def draw_dog_play():
         )
 
 
+def draw_dog_ready():
+    draw_background(play_image)
+    game_ui.draw(
+        CHAPTER1_PERFORMANCE_NAME,
+        chapter='1장',
+        subtitle='실전'
+    )
+    dog_performance.draw_performance()
+    draw_tutorial_control_bubble(
+        prompt='후프 가까이 오면 SPACE로 점프!',
+        hint='ENTER : 공연 시작'
+    )
+
+
 # --------------------------------------------------
 # 전체 화면 그리기
 # --------------------------------------------------
@@ -643,6 +663,9 @@ def draw():
 
     elif game_state == DOG_PLAY:
         draw_dog_play()
+
+    elif game_state == DOG_READY:
+        draw_dog_ready()
 
     update_canvas()
 

@@ -267,6 +267,17 @@ class DogPerformance:
         self.recent_message = ''
         self.recent_message_time = 0.0
 
+    def wait_for_start(self):
+        self.phase = 'ready'
+        self.dog_x = self.DOG_START_X
+        self.dog_y = self.DOG_FLOOR_Y
+        self.arrived = False
+        self.jump_active = False
+        self.jump_elapsed = 0.0
+        self.jump_offset = 0.0
+        self.frame_index = 0
+        self.frame_timer = 0.0
+
     def handle_performance_event(self, event):
         if self.phase != 'playing' or event.type != SDL_KEYDOWN:
             return
@@ -441,7 +452,11 @@ class DogPerformance:
 
     def _draw_dog(self):
         # clip_draw 원점은 이미지 하단이므로 실제 행 범위를 아래쪽 좌표로 바꾼다.
-        visual_row = 2 if self.arrived else (1 if self.jump_active else 0)
+        standing = self.phase in ('opening', 'ready')
+        visual_row = (
+            2 if self.arrived or standing
+            else (1 if self.jump_active else 0)
+        )
         source_x0 = round(self.frame_index * self.frame_width)
         source_x1 = round((self.frame_index + 1) * self.frame_width)
         row_top = self.sprite_row_top[visual_row]
