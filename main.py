@@ -543,7 +543,7 @@ def draw_dog_play():
         )
     else:
         draw_tutorial_control_bubble(
-            prompt='SPACE를 눌러 후프 점프!'
+            prompt='강아지가 후프에 가까이 가면 SPACE를 눌러 점프!'
         )
 
 
@@ -682,8 +682,10 @@ def main():
 
     dog_prep_dialogue = Dialogue()
     dog_prep_dialogue.lines = [
-        '이제 강아지 공연을 준비해 보자!',
+        '다음 순서인 강아지 공연을 준비해 보자!',
         '후프는 최대 5개까지 무대 위 원하는 위치에 놓을 수 있어.',
+        '후프를 놓을 때는 마우스로 드래그해 위치를 정해줘.',
+        '점프를 더 많이 성공할수록 더 많은 별을 받을 수 있어!',
         '배치가 끝나면 ENTER를 눌러 공연을 시작하자!'
     ]
     dog_prep_dialogue.finished_hint = 'ENTER : 공연 시작'
