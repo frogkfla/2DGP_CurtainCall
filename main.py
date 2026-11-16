@@ -56,6 +56,7 @@ control_dialogue_font = None
 mouse_ui_image = None
 control_dialogue_image = None
 tutorial_end_dialogue = None
+dog_prep_dialogue = None
 greeting_active = False
 greeting_time = 0.0
 greeting_completed = False
@@ -178,15 +179,23 @@ def handle_events():
                     if tutorial_end_dialogue.finished:
                         game_state = CHAPTER1_PREP
 
+            elif game_state == CHAPTER1_PREP:
+                if event.key == SDLK_SPACE:
+                    dog_prep_dialogue.next()
+                elif event.key in (SDLK_RETURN, SDLK_KP_ENTER):
+                    if dog_prep_dialogue.finished:
+                        if dog_performance.handle_preparation_event(event):
+                            opening_time = 0.0
+                            game_state = DOG_OPENING
+
         # 단상 드래그 처리
         if game_state == TUTORIAL_PREP:
             tutorial_prep.handle_event(event)
             continue
 
         if game_state == CHAPTER1_PREP and dog_performance is not None:
-            if dog_performance.handle_preparation_event(event):
-                opening_time = 0.0
-                game_state = DOG_OPENING
+            if event.type != SDL_KEYDOWN:
+                dog_performance.handle_preparation_event(event)
             continue
 
         if game_state == DOG_PLAY and dog_performance is not None:
@@ -274,6 +283,9 @@ def update(dt):
     elif game_state == CHAPTER1_INTRO:
         mouse.update()
         tutorial_end_dialogue.update(dt)
+
+    elif game_state == CHAPTER1_PREP:
+        dog_prep_dialogue.update(dt)
 
     elif game_state == DOG_OPENING:
         opening_time += dt
@@ -515,10 +527,7 @@ def draw_chapter1_prep():
     draw_background(ready_image)
     game_ui.draw()
     dog_performance.draw_preparation()
-    draw_tutorial_control_bubble(
-        prompt='후프를 좌우로 배치해 봐!',
-        hint=f'{len(dog_performance.hoops)}/5 · ENTER: 시작'
-    )
+    dog_prep_dialogue.draw()
 
 
 def draw_dog_play():
@@ -594,7 +603,7 @@ def main():
     global guide_font
     global control_dialogue_font
     global mouse_ui_image, control_dialogue_image
-    global tutorial_end_dialogue
+    global tutorial_end_dialogue, dog_prep_dialogue
     global is_hover, is_pressed, opening_time
 
     open_canvas(SCREEN_WIDTH, SCREEN_HEIGHT)
@@ -670,6 +679,14 @@ def main():
         '다시 무대 뒤로 돌아가자!'
     ]
     tutorial_end_dialogue.finished_hint = 'ENTER : 튜토리얼 완료'
+
+    dog_prep_dialogue = Dialogue()
+    dog_prep_dialogue.lines = [
+        '이제 강아지 공연을 준비해 보자!',
+        '후프는 최대 5개까지 무대 위 원하는 위치에 놓을 수 있어.',
+        '배치가 끝나면 ENTER를 눌러 공연을 시작하자!'
+    ]
+    dog_prep_dialogue.finished_hint = 'ENTER : 공연 시작'
 
     # 초기 상태
     running = True
