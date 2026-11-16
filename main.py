@@ -13,7 +13,7 @@ from dog import DogPerformance
 
 SCREEN_WIDTH = 1280
 SCREEN_HEIGHT = 720
-CHAPTER1_PERFORMANCE_NAME = '강아지의 후프 점프!'
+CHAPTER1_PERFORMANCE_NAME = '강아지의 후프 점프'
 
 # 게임 상태
 TITLE = 0
@@ -27,6 +27,7 @@ CHAPTER1_INTRO = 7
 CHAPTER1_PREP = 8
 DOG_OPENING = 9
 DOG_PLAY = 10
+DOG_READY = 11
 TUTORIAL_PLATFORM_SURFACE_OFFSET = 2
 GREETING_DURATION = 0.9
 
@@ -189,6 +190,11 @@ def handle_events():
                             opening_time = 0.0
                             game_state = DOG_OPENING
 
+            elif game_state == DOG_READY:
+                if event.key in (SDLK_RETURN, SDLK_KP_ENTER):
+                    dog_performance.start_performance()
+                    game_state = DOG_PLAY
+
         # 단상 드래그 처리
         if game_state == TUTORIAL_PREP:
             tutorial_prep.handle_event(event)
@@ -292,8 +298,8 @@ def update(dt):
         opening_time += dt
         if opening_time >= OPENING_DURATION:
             opening_time = OPENING_DURATION
-            dog_performance.start_performance()
-            game_state = DOG_PLAY
+            dog_performance.wait_for_start()
+            game_state = DOG_READY
 
     elif game_state == DOG_PLAY:
         dog_performance.update_performance(dt, game_ui)
@@ -402,7 +408,11 @@ def draw_opening():
 
 def draw_dog_opening():
     draw_background(play_image)
-    game_ui.draw(CHAPTER1_PERFORMANCE_NAME, chapter='1장')
+    game_ui.draw(
+        CHAPTER1_PERFORMANCE_NAME,
+        chapter='1장',
+        subtitle='실전'
+    )
     dog_performance.draw_opening()
 
     progress = min(opening_time / OPENING_DURATION, 1.0)
@@ -570,14 +580,22 @@ def draw_chapter1_intro():
 
 def draw_chapter1_prep():
     draw_background(ready_image)
-    game_ui.draw(CHAPTER1_PERFORMANCE_NAME, chapter='1장')
+    game_ui.draw(
+        CHAPTER1_PERFORMANCE_NAME,
+        chapter='1장',
+        subtitle='실전'
+    )
     dog_performance.draw_preparation()
     dog_prep_dialogue.draw()
 
 
 def draw_dog_play():
     draw_background(play_image)
-    game_ui.draw(CHAPTER1_PERFORMANCE_NAME, chapter='1장')
+    game_ui.draw(
+        CHAPTER1_PERFORMANCE_NAME,
+        chapter='1장',
+        subtitle='실전'
+    )
     dog_performance.draw_performance()
 
     if dog_performance.phase == 'result':
@@ -588,8 +606,22 @@ def draw_dog_play():
         )
     else:
         draw_tutorial_control_bubble(
-            prompt='후프 가까이에서 SPACE로 점프!'
+            prompt='가까이 오면 SPACE로 점프!'
         )
+
+
+def draw_dog_ready():
+    draw_background(play_image)
+    game_ui.draw(
+        CHAPTER1_PERFORMANCE_NAME,
+        chapter='1장',
+        subtitle='실전'
+    )
+    dog_performance.draw_performance()
+    draw_tutorial_control_bubble(
+        prompt='후프 가까이 오면 SPACE로 점프!',
+        hint='ENTER : 공연 시작'
+    )
 
 
 # --------------------------------------------------
@@ -631,6 +663,9 @@ def draw():
 
     elif game_state == DOG_PLAY:
         draw_dog_play()
+
+    elif game_state == DOG_READY:
+        draw_dog_ready()
 
     update_canvas()
 
@@ -728,10 +763,9 @@ def main():
     dog_prep_dialogue = Dialogue()
     dog_prep_dialogue.lines = [
         '다음 순서인 강아지 공연을 준비해 보자!',
-        '왼쪽 아래에서 후프를 원하는 위치에 배치해줘.',
-        '후프를 놓을 때는 마우스로 드래그해서 위치를 정해줘!.',
-        '최대 5개까지 배치할 수 있고, 더 많이 성공할수록 더 많은 별을 받을 수 있어!',
-        '하지만 실패하면 관객들의 만족도가 떨어지니 주의해야 해~',
+        '후프는 최대 5개까지 무대 위 원하는 위치에 놓을 수 있어.',
+        '후프를 놓을 때는 마우스로 드래그해 위치를 정해줘.',
+        '점프를 더 많이 성공할수록 더 많은 별을 받을 수 있어!',
         '배치가 끝나면 ENTER를 눌러 공연을 시작하자!'
     ]
     dog_prep_dialogue.finished_hint = 'ENTER : 공연 시작'
