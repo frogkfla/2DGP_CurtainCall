@@ -524,7 +524,7 @@ def draw_chapter1_prep():
 def draw_dog_play():
     draw_background(play_image)
     game_ui.draw()
-    dog_performance.draw_performance(control_dialogue_font)
+    dog_performance.draw_performance()
 
     if dog_performance.phase == 'result':
         game_ui.draw_stars(dog_performance.star_rating)

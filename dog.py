@@ -97,22 +97,16 @@ class DogPerformance:
         self.recent_message_time = 0.0
         self.rewarded = False
 
-        # 사용자가 나중에 추가할 타이밍별 결과 이미지의 기본 파일명.
-        # 파일이 없으면 후프 옆에 간단한 텍스트 판정을 표시한다.
+        # 사용자가 추가한 PERFECT / GOOD / MISS 세로 스프라이트 시트.
         ui_dir = os.path.join(asset_dir, 'ui')
-        feedback_names = {
-            'perfect': 'dog_timing_perfect.png',
-            'good': 'dog_timing_good.png',
-            'early': 'dog_timing_early.png',
-            'late': 'dog_timing_late.png',
-            'missed': 'dog_timing_missed.png',
-            'height': 'dog_timing_height.png',
+        self.accuracy_image = load_image(
+            os.path.join(ui_dir, 'accuracy.png')
+        )
+        self.accuracy_sprites = {
+            'perfect': (521, 254),
+            'good': (252, 234),
+            'miss': (0, 226),
         }
-        self.feedback_images = {}
-        for grade, filename in feedback_names.items():
-            image_path = os.path.join(ui_dir, filename)
-            if os.path.isfile(image_path):
-                self.feedback_images[grade] = load_image(image_path)
 
     @property
     def remaining_hoops(self):
@@ -421,35 +415,23 @@ class DogPerformance:
             game_ui.reward_success()
             self.rewarded = True
 
-    def _draw_feedback(self, hoop, font):
+    def _draw_feedback(self, hoop):
         grade = hoop['grade']
-        image = self.feedback_images.get(grade)
-        if image is not None:
-            draw_height = 72
-            draw_width = min(150, draw_height * image.w / image.h)
-            draw_height = draw_width * image.h / image.w
-            image.draw(
-                hoop['x'],
-                hoop['y'] + self.hoop_height * 0.65,
-                draw_width,
-                draw_height
-            )
-            return
+        sprite_grade = grade if grade in ('perfect', 'good') else 'miss'
+        source_y, source_height = self.accuracy_sprites[sprite_grade]
+        source_width = self.accuracy_image.w
+        draw_width = 100
+        draw_height = draw_width * source_height / source_width
 
-        labels = {
-            'perfect': '완벽',
-            'good': '성공',
-            'early': '빠름',
-            'late': '늦음',
-            'missed': '놓침',
-            'height': '높이',
-        }
-        color = (76, 132, 86) if hoop['state'] == 'success' else (160, 65, 54)
-        font.draw(
-            hoop['x'] - 18,
-            hoop['y'] + self.hoop_height * 0.62,
-            labels[grade],
-            color
+        self.accuracy_image.clip_draw(
+            0,
+            source_y,
+            source_width,
+            source_height,
+            hoop['x'] + 12,
+            hoop['y'] + self.hoop_height * 0.65,
+            draw_width,
+            draw_height
         )
 
     def _draw_dog(self):
@@ -480,7 +462,7 @@ class DogPerformance:
                 hoop['x'], hoop['y'], self.HOOP_WIDTH, self.hoop_height
             )
 
-    def draw_performance(self, font):
+    def draw_performance(self):
         # 강아지를 먼저 그려 후프 뒤쪽에 두고, 판정 표시는 가장 위에 그린다.
         self._draw_dog()
         for hoop in self.hoops:
@@ -488,4 +470,4 @@ class DogPerformance:
                 hoop['x'], hoop['y'], self.HOOP_WIDTH, self.hoop_height
             )
             if hoop['state'] in ('success', 'failed'):
-                self._draw_feedback(hoop, font)
+                self._draw_feedback(hoop)
