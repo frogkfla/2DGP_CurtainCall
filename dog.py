@@ -11,13 +11,15 @@ class DogPerformance:
     DOG_HEIGHT = 100
     DOG_FLOOR_Y = 260
     HOOP_FLOOR_Y = 260
-    RUN_SPEED = 220
-    TARGET_JUMP_DISTANCE = 137
+    DOG_START_X = 110
+    DOG_END_X = 1160
+    RUN_SPEED = 180
+    TARGET_JUMP_DISTANCE = 133
     EARLY_PRESS_DISTANCE = 155
     LATE_PRESS_DISTANCE = 20
     TIMING_TOLERANCE = 50
     HOOP_VERTICAL_TOLERANCE = 68
-    JUMP_DURATION = 0.75
+    JUMP_DURATION = 0.9
     JUMP_HEIGHT = 105
 
     def __init__(self):
@@ -41,6 +43,7 @@ class DogPerformance:
         self.sprite_row_top = (64, 263, 460)
         self.sprite_row_bottom = (261, 459, 663)  # 끝 좌표는 미포함
         self.frame_interval = 0.09
+        self.finish_frame_interval = 0.18
         self.frame_timer = 0.0
         self.frame_index = 0
         self.run_time = 0.0
@@ -81,7 +84,7 @@ class DogPerformance:
         self.candidate_x = self.palette_x
         self.candidate_y = self.palette_y
 
-        self.dog_x = 90
+        self.dog_x = self.DOG_START_X
         self.dog_y = self.DOG_FLOOR_Y
         self.arrived = False
         self.jump_active = False
@@ -249,7 +252,7 @@ class DogPerformance:
             hoop['attempt_x'] = None
             hoop['grade'] = None
 
-        self.dog_x = 90
+        self.dog_x = self.DOG_START_X
         self.dog_y = self.DOG_FLOOR_Y
         self.arrived = False
         self.jump_active = False
@@ -338,6 +341,7 @@ class DogPerformance:
         dog_center_y = (
             self.DOG_FLOOR_Y
             + self.DOG_HEIGHT / 2
+            - 2
             + math.sin(progress * math.pi) * self.JUMP_HEIGHT
         )
         if abs(dog_center_y - hoop['y']) > self.HOOP_VERTICAL_TOLERANCE:
@@ -353,8 +357,8 @@ class DogPerformance:
         if self.phase == 'result':
             # 도착 후에는 3행의 마무리 동작만 이어서 재생한다.
             self.frame_timer += dt
-            while self.frame_timer >= self.frame_interval:
-                self.frame_timer -= self.frame_interval
+            while self.frame_timer >= self.finish_frame_interval:
+                self.frame_timer -= self.finish_frame_interval
                 self.frame_index = (self.frame_index + 1) % self.frame_columns
             return
 
@@ -392,11 +396,11 @@ class DogPerformance:
             if self.recent_message_time == 0:
                 self.recent_message = ''
 
-        if self.dog_x >= 1180:
+        if self.dog_x >= self.DOG_END_X:
             for hoop in self.hoops:
                 if hoop['state'] == 'pending':
                     self._resolve_hoop(hoop, 'missed')
-            self.dog_x = 1180
+            self.dog_x = self.DOG_END_X
             self.arrived = True
             self.frame_index = 0
             self.frame_timer = 0.0
