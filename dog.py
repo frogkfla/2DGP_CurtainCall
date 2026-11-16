@@ -278,6 +278,15 @@ class DogPerformance:
         self.frame_index = 0
         self.frame_timer = 0.0
 
+    def update_waiting(self, dt):
+        if self.phase != 'ready':
+            return
+
+        self.frame_timer += dt
+        while self.frame_timer >= self.finish_frame_interval:
+            self.frame_timer -= self.finish_frame_interval
+            self.frame_index = (self.frame_index + 1) % self.frame_columns
+
     def handle_performance_event(self, event):
         if self.phase != 'playing' or event.type != SDL_KEYDOWN:
             return

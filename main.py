@@ -304,6 +304,9 @@ def update(dt):
     elif game_state == DOG_PLAY:
         dog_performance.update_performance(dt, game_ui)
 
+    elif game_state == DOG_READY:
+        dog_performance.update_waiting(dt)
+
 
 # --------------------------------------------------
 # 화면 그리기
