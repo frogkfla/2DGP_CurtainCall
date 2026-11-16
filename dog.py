@@ -7,7 +7,7 @@ class DogPerformance:
     MAX_HOOPS = 5
     SCREEN_WIDTH = 1280
     HOOP_WIDTH = 72
-    PALETTE_HOOP_WIDTH = 42
+    PALETTE_HOOP_WIDTH = 52
     DOG_WIDTH = 112
     DOG_HEIGHT = 100
     DOG_FLOOR_Y = 260
@@ -70,10 +70,10 @@ class DogPerformance:
         self.hoops = []
         self.phase = 'placing'
 
-        # 준비 화면에서도 후프는 강아지 달리기 선에 놓인다.
+        # 후프 보급 아이콘은 준비 화면 왼쪽 아래의 빈 공간에 둔다.
         self.palette_x = 125
         self.palette_width = self.PALETTE_HOOP_WIDTH
-        self.palette_y = self.HOOP_FLOOR_Y + self.palette_height / 2
+        self.palette_y = 120
         self.stage_left = 160
         self.stage_right = 1120
 
