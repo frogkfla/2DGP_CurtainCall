@@ -14,13 +14,13 @@ class DogPerformance:
     DOG_START_X = 110
     DOG_END_X = 1160
     RUN_SPEED = 180
-    TARGET_JUMP_DISTANCE = 133
+    TARGET_JUMP_DISTANCE = 137
     EARLY_PRESS_DISTANCE = 155
     LATE_PRESS_DISTANCE = 20
-    TIMING_TOLERANCE = 50
-    HOOP_VERTICAL_TOLERANCE = 68
+    TIMING_TOLERANCE = 65
+    HOOP_VERTICAL_TOLERANCE = 82
     JUMP_DURATION = 0.9
-    JUMP_HEIGHT = 105
+    JUMP_HEIGHT = 120
 
     def __init__(self):
         base = os.path.dirname(os.path.abspath(__file__))
@@ -344,7 +344,7 @@ class DogPerformance:
 
         self._resolve_hoop(
             hoop,
-            'perfect' if timing_error <= 18 else 'good'
+            'perfect' if timing_error <= 24 else 'good'
         )
 
     def update_performance(self, dt, game_ui):
