@@ -5,6 +5,7 @@ import os
 
 class DogPerformance:
     MAX_HOOPS = 5
+    SCREEN_WIDTH = 1280
     HOOP_WIDTH = 72
     PALETTE_HOOP_WIDTH = 42
     DOG_WIDTH = 112
@@ -145,6 +146,10 @@ class DogPerformance:
 
         if event.type == SDL_KEYDOWN:
             if event.key in (SDLK_RETURN, SDLK_KP_ENTER) and self.hoops:
+                # 무대 뒤에서 본 좌우는 관객석에서 본 좌우와 반대다.
+                # Y는 같은 바닥/달리기 선을 유지하고 X만 화면 중앙 기준으로 반전한다.
+                for hoop in self.hoops:
+                    hoop['x'] = self.SCREEN_WIDTH - hoop['x']
                 self.phase = 'opening'
                 return True
             return False
