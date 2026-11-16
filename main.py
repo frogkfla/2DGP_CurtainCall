@@ -8,6 +8,7 @@ from dialogue import Dialogue
 from game_ui import GameUI
 from tutorial import Tutorial, TUTORIAL_PERFORMANCE_NAME
 from tutorial_prep import TutorialPrep
+from dog import DogPerformance
 
 
 SCREEN_WIDTH = 1280
@@ -23,6 +24,8 @@ TUTORIAL_PREP = 5
 TUTORIAL_PLAY = 6
 CHAPTER1_INTRO = 7
 CHAPTER1_PREP = 8
+DOG_OPENING = 9
+DOG_PLAY = 10
 TUTORIAL_PLATFORM_SURFACE_OFFSET = 2
 GREETING_DURATION = 0.9
 
@@ -47,6 +50,7 @@ dialogue = None
 tutorial = None
 tutorial_prep = None
 game_ui = None
+dog_performance = None
 guide_font = None
 control_dialogue_font = None
 mouse_ui_image = None
@@ -97,6 +101,7 @@ def handle_events():
     global running, game_state
     global is_hover, is_pressed, opening_time
     global greeting_active, greeting_time, greeting_completed
+    global dog_performance
 
     for event in get_events():
 
@@ -176,6 +181,16 @@ def handle_events():
         # 단상 드래그 처리
         if game_state == TUTORIAL_PREP:
             tutorial_prep.handle_event(event)
+            continue
+
+        if game_state == CHAPTER1_PREP and dog_performance is not None:
+            if dog_performance.handle_preparation_event(event):
+                opening_time = 0.0
+                game_state = DOG_OPENING
+            continue
+
+        if game_state == DOG_PLAY and dog_performance is not None:
+            dog_performance.handle_performance_event(event)
             continue
 
         # 타이틀 화면 이외에는 시작 버튼 이벤트 무시
@@ -259,6 +274,16 @@ def update(dt):
     elif game_state == CHAPTER1_INTRO:
         mouse.update()
         tutorial_end_dialogue.update(dt)
+
+    elif game_state == DOG_OPENING:
+        opening_time += dt
+        if opening_time >= OPENING_DURATION:
+            opening_time = OPENING_DURATION
+            dog_performance.start_performance()
+            game_state = DOG_PLAY
+
+    elif game_state == DOG_PLAY:
+        dog_performance.update_performance(dt, game_ui)
 
 
 # --------------------------------------------------
@@ -362,6 +387,28 @@ def draw_opening():
     )
 
 
+def draw_dog_opening():
+    draw_background(play_image)
+    game_ui.draw()
+    dog_performance.draw_opening()
+
+    progress = min(opening_time / OPENING_DURATION, 1.0)
+    smooth = smooth_step(progress)
+    move_distance = CURTAIN_MOVE_DISTANCE * smooth
+    curtain_left.draw(
+        SCREEN_WIDTH / 2 - move_distance,
+        SCREEN_HEIGHT / 2,
+        SCREEN_WIDTH,
+        SCREEN_HEIGHT
+    )
+    curtain_right.draw(
+        SCREEN_WIDTH / 2 + move_distance,
+        SCREEN_HEIGHT / 2 + RIGHT_CURTAIN_Y_OFFSET,
+        SCREEN_WIDTH,
+        SCREEN_HEIGHT
+    )
+
+
 # --------------------------------------------------
 # 무대 앞 공연
 # --------------------------------------------------
@@ -414,7 +461,7 @@ def draw_tutorial_play():
         draw_tutorial_control_bubble()
 
 
-def draw_tutorial_control_bubble(dialogue_to_show=None):
+def draw_tutorial_control_bubble(dialogue_to_show=None, prompt=None, hint=None):
     # 왼쪽 아래 조작 안내 UI
     control_dialogue_image.draw(252, 115, 300, 123)
     mouse_ui_image.draw(75, 72, 120, 80)
@@ -423,9 +470,16 @@ def draw_tutorial_control_bubble(dialogue_to_show=None):
         control_dialogue_font.draw(
             135,
             123,
-            'SPACE를 눌러 인사해 봐!',
+            prompt or 'SPACE를 눌러 인사해 봐!',
             (104, 58, 39)
         )
+        if hint:
+            tutorial_end_dialogue.hint_font.draw(
+                290,
+                99,
+                hint,
+                (125, 85, 60)
+            )
         return
 
     visible_text = dialogue_to_show.get_wrapped_text()[:dialogue_to_show.visible_count]
@@ -460,7 +514,28 @@ def draw_chapter1_intro():
 def draw_chapter1_prep():
     draw_background(ready_image)
     game_ui.draw()
-    mouse.draw()
+    dog_performance.draw_preparation()
+    draw_tutorial_control_bubble(
+        prompt='후프를 좌우로 배치해 봐!',
+        hint=f'{len(dog_performance.hoops)}/5 · ENTER: 시작'
+    )
+
+
+def draw_dog_play():
+    draw_background(play_image)
+    game_ui.draw()
+    dog_performance.draw_performance(control_dialogue_font)
+
+    if dog_performance.phase == 'result':
+        game_ui.draw_stars(dog_performance.star_rating)
+        draw_tutorial_control_bubble(
+            prompt=f'통과한 후프: {dog_performance.success_count}/{len(dog_performance.hoops)}',
+            hint=f'{dog_performance.star_rating}별'
+        )
+    else:
+        draw_tutorial_control_bubble(
+            prompt='SPACE를 눌러 후프 점프!'
+        )
 
 
 # --------------------------------------------------
@@ -497,6 +572,12 @@ def draw():
     elif game_state == CHAPTER1_PREP:
         draw_chapter1_prep()
 
+    elif game_state == DOG_OPENING:
+        draw_dog_opening()
+
+    elif game_state == DOG_PLAY:
+        draw_dog_play()
+
     update_canvas()
 
 
@@ -509,7 +590,7 @@ def main():
     global title_image, ready_image, play_image
     global curtain_left, curtain_right
     global button_normal, button_hover, button_pressed
-    global mouse, dialogue, tutorial, tutorial_prep, game_ui
+    global mouse, dialogue, tutorial, tutorial_prep, game_ui, dog_performance
     global guide_font
     global control_dialogue_font
     global mouse_ui_image, control_dialogue_image
@@ -580,6 +661,7 @@ def main():
     tutorial = Tutorial()
     tutorial_prep = TutorialPrep()
     game_ui = GameUI()
+    dog_performance = DogPerformance()
     tutorial_end_dialogue = Dialogue()
     tutorial_end_dialogue.lines = [
         '멋진 인사였어!',
