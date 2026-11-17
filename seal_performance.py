@@ -23,7 +23,7 @@ class SealPerformance:
 
     SEAL_LEFT_X = 420
     SEAL_RIGHT_X = 930
-    SEAL_FLOOR_Y = 145
+    SEAL_FLOOR_Y = 185
     SEAL_WIDTH = 160
 
     MIN_ANGLE = 10
@@ -32,10 +32,14 @@ class SealPerformance:
     START_ANGLE = 30
     LAUNCH_SPEED = 620.0
     GRAVITY = 450.0
-    BARREL_LENGTH = 91.0
+    # 발사대 그림의 받침 회전축에서 각 프레임의 주둥이 중앙까지의 거리.
+    # 기존 공통 길이는 각도가 큰 프레임에서 주둥이를 지나쳐 공이 뜨는 문제가 있었다.
+    BARREL_LENGTH = 79.0
     PIVOT_OFFSET_X = 22.0
     PIVOT_HEIGHT = 104.0
-    NOSE_HIT_RADIUS = 30.0
+    NOSE_HIT_RADIUS = 38.0
+    LAUNCHER_FRAME_PADDING = 3
+    SEAL_FRAME_LEFT_PADDING = 10
 
     def __init__(self):
         base = os.path.dirname(os.path.abspath(__file__))
@@ -125,7 +129,7 @@ class SealPerformance:
     def _set_seal_position(self, x):
         self.seal_x = x
         # 물개 스프라이트 첫 프레임의 콧잔등 위치를 기준으로 착지점을 갱신한다.
-        self.nose_x = self.seal_x + self.SEAL_WIDTH * 0.335
+        self.nose_x = self.seal_x - self.SEAL_WIDTH * 0.335
         self.nose_y = self.seal_floor_y + self.seal_draw_height * 0.93
 
     def _launcher_muzzle(self, x, floor_y, direction=1):
@@ -140,7 +144,9 @@ class SealPerformance:
 
     def _draw_launcher(self, x, floor_y, width, direction=1):
         frame = self._angle_frame()
-        source_x0 = round(frame * self.launcher_frame_width)
+        # 인접 프레임이 섞이는 왼쪽 경계만 안쪽으로 자른다.
+        # 오른쪽은 주둥이 테두리가 놓이는 쪽이므로 원본 끝까지 보존한다.
+        source_x0 = round(frame * self.launcher_frame_width) + self.LAUNCHER_FRAME_PADDING
         source_x1 = round((frame + 1) * self.launcher_frame_width)
         height = width * self.launcher_source_height / self.launcher_frame_width
         flip = 'h' if direction < 0 else ''
@@ -182,15 +188,22 @@ class SealPerformance:
         source_y = self.seal_image.h - row_bottom
         source_height = row_bottom - row_top
         frame = self.seal_frame if self.caught else 0
-        source_x0 = round(frame * self.seal_frame_width)
+        source_x0 = (
+            round(frame * self.seal_frame_width)
+            + self.SEAL_FRAME_LEFT_PADDING
+        )
+        # 좌우 반전 시 원본 왼쪽 경계가 화면 오른쪽이 된다.
+        # 이 경계만 안쪽으로 옮겨 이웃 프레임을 제외하고 반대쪽 끝은 보존한다.
         source_x1 = round((frame + 1) * self.seal_frame_width)
         draw_height = self.SEAL_WIDTH * source_height / self.seal_frame_width
 
-        self.seal_image.clip_draw(
+        self.seal_image.clip_composite_draw(
             source_x0,
             source_y,
             source_x1 - source_x0,
             source_height,
+            0,
+            'h',
             self.seal_x,
             self.seal_floor_y + draw_height / 2,
             self.SEAL_WIDTH,
