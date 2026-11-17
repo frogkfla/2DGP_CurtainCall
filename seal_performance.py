@@ -182,7 +182,7 @@ class SealPerformance:
             size
         )
 
-    def _draw_seal(self):
+    def _draw_seal(self, x=None, backstage=False):
         row_name = 'caught' if self.caught else 'idle'
         row_top, row_bottom = self.seal_rows[row_name]
         source_y = self.seal_image.h - row_bottom
@@ -196,6 +196,9 @@ class SealPerformance:
         # 이 경계만 안쪽으로 옮겨 이웃 프레임을 제외하고 반대쪽 끝은 보존한다.
         source_x1 = round((frame + 1) * self.seal_frame_width)
         draw_height = self.SEAL_WIDTH * source_height / self.seal_frame_width
+        if x is None:
+            x = self.seal_x
+        flip = '' if backstage else 'h'
 
         self.seal_image.clip_composite_draw(
             source_x0,
@@ -203,8 +206,8 @@ class SealPerformance:
             source_x1 - source_x0,
             source_height,
             0,
-            'h',
-            self.seal_x,
+            flip,
+            x,
             self.seal_floor_y + draw_height / 2,
             self.SEAL_WIDTH,
             draw_height
@@ -458,6 +461,17 @@ class SealPerformance:
 
     def draw_preparation(self):
         launcher_x = self._preparation_launcher_x()
+        preview_launcher_x = (
+            self.LAUNCHER_PALETTE_X if launcher_x is None else launcher_x
+        )
+        seal_front_x = (
+            self.SEAL_LEFT_X
+            if preview_launcher_x <= self.SCREEN_WIDTH / 2
+            else self.SEAL_RIGHT_X
+        )
+        backstage_seal_x = self.SCREEN_WIDTH - seal_front_x
+        self._draw_seal(x=backstage_seal_x, backstage=True)
+
         if launcher_x is not None:
             self._draw_launcher(
                 launcher_x,
