@@ -9,11 +9,13 @@ from game_ui import GameUI
 from tutorial import Tutorial, TUTORIAL_PERFORMANCE_NAME
 from tutorial_prep import TutorialPrep
 from dog import DogPerformance
+from seal_performance import SealPerformance
 
 
 SCREEN_WIDTH = 1280
 SCREEN_HEIGHT = 720
 CHAPTER1_PERFORMANCE_NAME = '강아지의 후프 점프'
+CHAPTER2_PERFORMANCE_NAME = '물개의 코 위에 공 안착'
 CONTROL_HINT_X = 290
 CONTROL_HINT_Y = 96
 
@@ -30,6 +32,9 @@ CHAPTER1_PREP = 8
 DOG_OPENING = 9
 DOG_PLAY = 10
 DOG_READY = 11
+SEAL_PREP = 12
+SEAL_OPENING = 13
+SEAL_PLAY = 14
 TUTORIAL_PLATFORM_SURFACE_OFFSET = 2
 GREETING_DURATION = 0.9
 
@@ -40,6 +45,7 @@ running = True
 title_image = None
 ready_image = None
 play_image = None
+play_open_image = None
 
 curtain_left = None
 curtain_right = None
@@ -55,12 +61,14 @@ tutorial = None
 tutorial_prep = None
 game_ui = None
 dog_performance = None
+seal_performance = None
 guide_font = None
 control_dialogue_font = None
 mouse_ui_image = None
 control_dialogue_image = None
 tutorial_end_dialogue = None
 dog_prep_dialogue = None
+seal_prep_dialogue = None
 greeting_active = False
 greeting_time = 0.0
 greeting_completed = False
@@ -197,6 +205,15 @@ def handle_events():
                     dog_performance.start_performance()
                     game_state = DOG_PLAY
 
+            elif game_state == SEAL_PREP:
+                if event.key == SDLK_SPACE:
+                    seal_prep_dialogue.next()
+                elif event.key in (SDLK_RETURN, SDLK_KP_ENTER):
+                    if seal_prep_dialogue.finished:
+                        if seal_performance.handle_preparation_event(event):
+                            opening_time = 0.0
+                            game_state = SEAL_OPENING
+
         # 단상 드래그 처리
         if game_state == TUTORIAL_PREP:
             tutorial_prep.handle_event(event)
@@ -208,7 +225,23 @@ def handle_events():
             continue
 
         if game_state == DOG_PLAY and dog_performance is not None:
-            dog_performance.handle_performance_event(event)
+            if (
+                dog_performance.phase == 'result'
+                and event.type == SDL_KEYDOWN
+                and event.key in (SDLK_RETURN, SDLK_KP_ENTER)
+            ):
+                game_state = SEAL_PREP
+            else:
+                dog_performance.handle_performance_event(event)
+            continue
+
+        if game_state == SEAL_PREP and seal_performance is not None:
+            if event.type != SDL_KEYDOWN:
+                seal_performance.handle_preparation_event(event)
+            continue
+
+        if game_state == SEAL_PLAY and seal_performance is not None:
+            seal_performance.handle_performance_event(event)
             continue
 
         # 타이틀 화면 이외에는 시작 버튼 이벤트 무시
@@ -296,6 +329,9 @@ def update(dt):
     elif game_state == CHAPTER1_PREP:
         dog_prep_dialogue.update(dt)
 
+    elif game_state == SEAL_PREP:
+        seal_prep_dialogue.update(dt)
+
     elif game_state == DOG_OPENING:
         opening_time += dt
         if opening_time >= OPENING_DURATION:
@@ -308,6 +344,16 @@ def update(dt):
 
     elif game_state == DOG_READY:
         dog_performance.update_waiting(dt)
+
+    elif game_state == SEAL_OPENING:
+        opening_time += dt
+        if opening_time >= OPENING_DURATION:
+            opening_time = OPENING_DURATION
+            seal_performance.begin_aiming()
+            game_state = SEAL_PLAY
+
+    elif game_state == SEAL_PLAY:
+        seal_performance.update(dt, game_ui)
 
 
 # --------------------------------------------------
@@ -607,7 +653,7 @@ def draw_dog_play():
         game_ui.draw_stars(dog_performance.star_rating)
         draw_tutorial_control_bubble(
             prompt=f'통과한 후프: {dog_performance.success_count}/{len(dog_performance.hoops)}',
-            hint=f'{dog_performance.star_rating}별'
+            hint='ENTER : 다음 공연'
         )
     else:
         draw_tutorial_control_bubble(
@@ -627,6 +673,72 @@ def draw_dog_ready():
         prompt='후프 가까이에서 SPACE로 점프!',
         hint='ENTER : 공연 시작'
     )
+
+
+def draw_seal_prep():
+    draw_background(ready_image)
+    game_ui.draw(
+        CHAPTER2_PERFORMANCE_NAME,
+        chapter='2장',
+        subtitle='실전'
+    )
+    seal_performance.draw_preparation()
+    seal_prep_dialogue.draw()
+
+
+def draw_seal_opening():
+    draw_background(play_open_image)
+    game_ui.draw(
+        CHAPTER2_PERFORMANCE_NAME,
+        chapter='2장',
+        subtitle='실전'
+    )
+    seal_performance.draw_opening()
+
+    progress = min(opening_time / OPENING_DURATION, 1.0)
+    move_distance = CURTAIN_MOVE_DISTANCE * smooth_step(progress)
+    curtain_left.draw(
+        SCREEN_WIDTH / 2 - move_distance,
+        SCREEN_HEIGHT / 2,
+        SCREEN_WIDTH,
+        SCREEN_HEIGHT
+    )
+    curtain_right.draw(
+        SCREEN_WIDTH / 2 + move_distance,
+        SCREEN_HEIGHT / 2 + RIGHT_CURTAIN_Y_OFFSET,
+        SCREEN_WIDTH,
+        SCREEN_HEIGHT
+    )
+
+
+def draw_seal_play():
+    draw_background(play_open_image)
+    game_ui.draw(
+        CHAPTER2_PERFORMANCE_NAME,
+        chapter='2장',
+        subtitle='실전'
+    )
+    seal_performance.draw_performance()
+
+    if seal_performance.phase == 'aiming':
+        draw_tutorial_control_bubble(
+            prompt='↑/↓ 각도 조절, SPACE 발사',
+            hint=f'{round(seal_performance.launcher_angle)}°'
+        )
+    elif seal_performance.phase == 'flying':
+        draw_tutorial_control_bubble(
+            prompt='공이 포물선을 따라 날아가고 있어!'
+        )
+    elif seal_performance.phase == 'caught':
+        draw_tutorial_control_bubble(
+            prompt='물개 콧잔등에 공이 안착했어!',
+            hint='공연 성공!'
+        )
+    elif seal_performance.phase == 'miss':
+        draw_tutorial_control_bubble(
+            prompt='빗나갔어. 각도를 바꿔 다시 해보자!',
+            hint='R : 재장전'
+        )
 
 
 # --------------------------------------------------
@@ -672,6 +784,15 @@ def draw():
     elif game_state == DOG_READY:
         draw_dog_ready()
 
+    elif game_state == SEAL_PREP:
+        draw_seal_prep()
+
+    elif game_state == SEAL_OPENING:
+        draw_seal_opening()
+
+    elif game_state == SEAL_PLAY:
+        draw_seal_play()
+
     update_canvas()
 
 
@@ -681,14 +802,15 @@ def draw():
 
 def main():
     global running, game_state
-    global title_image, ready_image, play_image
+    global title_image, ready_image, play_image, play_open_image
     global curtain_left, curtain_right
     global button_normal, button_hover, button_pressed
-    global mouse, dialogue, tutorial, tutorial_prep, game_ui, dog_performance
+    global mouse, dialogue, tutorial, tutorial_prep, game_ui
+    global dog_performance, seal_performance
     global guide_font
     global control_dialogue_font
     global mouse_ui_image, control_dialogue_image
-    global tutorial_end_dialogue, dog_prep_dialogue
+    global tutorial_end_dialogue, dog_prep_dialogue, seal_prep_dialogue
     global is_hover, is_pressed, opening_time
 
     open_canvas(SCREEN_WIDTH, SCREEN_HEIGHT)
@@ -704,6 +826,10 @@ def main():
 
     play_image = load_image(
         asset_path('background', 'circus_stage_front.png')
+    )
+
+    play_open_image = load_image(
+        asset_path('background', 'circus_stage_front_open.png')
     )
 
     # 커튼 이미지
@@ -756,6 +882,7 @@ def main():
     tutorial_prep = TutorialPrep()
     game_ui = GameUI()
     dog_performance = DogPerformance()
+    seal_performance = SealPerformance()
     tutorial_end_dialogue = Dialogue()
     tutorial_end_dialogue.lines = [
         '멋진 인사였어!',
@@ -774,6 +901,14 @@ def main():
         '배치가 끝나면 ENTER를 눌러 공연을 시작하자!'
     ]
     dog_prep_dialogue.finished_hint = 'ENTER : 공연 시작'
+
+    seal_prep_dialogue = Dialogue()
+    seal_prep_dialogue.lines = [
+        '다음 공연은 물개 콧잔등에 공을 안착시키는 거야!',
+        '왼쪽 아래 발사대를 무대 위에 놓고, 공을 발사대 입구에 끌어 장전해.',
+        '준비가 끝나면 ENTER를 눌러 커튼을 열자!'
+    ]
+    seal_prep_dialogue.finished_hint = 'ENTER : 공연 준비 완료'
 
     # 초기 상태
     running = True
