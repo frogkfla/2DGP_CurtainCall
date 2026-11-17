@@ -44,6 +44,8 @@ class SealPerformance:
     BALANCE_MAX_TILT = 0.78
     BALANCE_CONTROL_ACCEL = 5.5
     BALANCE_DAMPING = 1.8
+    PERFECT_HIT_DISTANCE = 12.0
+    ACCURACY_DRAW_WIDTH = 90
 
     def __init__(self):
         base = os.path.dirname(os.path.abspath(__file__))
@@ -59,6 +61,14 @@ class SealPerformance:
         self.ball_image = load_image(
             os.path.join(assets, 'props', 'ball.png')
         )
+        self.accuracy_image = load_image(
+            os.path.join(assets, 'ui', 'accuracy.png')
+        )
+        self.accuracy_sprites = {
+            'perfect': (521, 254),
+            'good': (252, 234),
+            'miss': (0, 226),
+        }
 
         self.launcher_columns = 8
         self.launcher_frame_width = self.launcher_image.w / self.launcher_columns
@@ -130,6 +140,7 @@ class SealPerformance:
         self.balance_left = False
         self.balance_right = False
         self.miss_reason = 'shot'
+        self.accuracy_grade = None
 
     def _angle_frame(self, angle=None):
         if angle is None:
@@ -379,6 +390,7 @@ class SealPerformance:
             self.ball_loaded = True
             self.ball_frame = 0
             self.miss_reason = 'shot'
+            self.accuracy_grade = None
             self.phase = 'aiming'
 
     def _launch(self):
@@ -395,6 +407,7 @@ class SealPerformance:
         self.ball_rotation = 0.0
         self.flight_time = 0.0
         self.miss_reason = 'shot'
+        self.accuracy_grade = None
         self.ball_loaded = False
         self.phase = 'flying'
 
@@ -440,11 +453,17 @@ class SealPerformance:
             ) * dt
 
             # 빠른 프레임에서도 콧잔등을 통과해 놓치지 않도록 선분 간격을 검사한다.
-            if self._segment_near_target(
+            impact_distance = self._segment_target_distance(
                 previous_x, previous_y, self.ball_x, self.ball_y
-            ):
+            )
+            if impact_distance <= self.NOSE_HIT_RADIUS:
                 self.ball_x = self.nose_x
                 self.ball_y = self.nose_y
+                self.accuracy_grade = (
+                    'perfect'
+                    if impact_distance <= self.PERFECT_HIT_DISTANCE
+                    else 'good'
+                )
                 self.phase = 'balancing'
                 self.caught = True
                 self.balance_elapsed = 0.0
@@ -461,6 +480,7 @@ class SealPerformance:
                 or self.flight_time >= 4.0
             ):
                 self.phase = 'miss'
+                self.accuracy_grade = 'miss'
 
         if self.phase == 'balancing':
             self._update_balance(dt, game_ui)
@@ -513,6 +533,7 @@ class SealPerformance:
         self.ball_vy = -45
         self.ball_rotation = -math.degrees(self.balance_angle)
         self.miss_reason = 'balance'
+        self.accuracy_grade = 'miss'
         self.balance_left = False
         self.balance_right = False
         self.phase = 'falling'
@@ -534,11 +555,31 @@ class SealPerformance:
             self.seal_frame_timer -= 0.18
             self.seal_frame = (self.seal_frame + 1) % self.seal_columns
 
+    def _draw_accuracy(self):
+        if self.accuracy_grade is None:
+            return
+        source_y, source_height = self.accuracy_sprites[self.accuracy_grade]
+        draw_height = (
+            self.ACCURACY_DRAW_WIDTH
+            * source_height
+            / self.accuracy_image.w
+        )
+        self.accuracy_image.clip_draw(
+            0,
+            source_y,
+            self.accuracy_image.w,
+            source_height,
+            self.nose_x,
+            self.nose_y + 72,
+            self.ACCURACY_DRAW_WIDTH,
+            draw_height
+        )
+
     def update_preparation(self, dt):
         if self.phase == 'placing':
             self._update_seal_animation(dt)
 
-    def _segment_near_target(self, x1, y1, x2, y2):
+    def _segment_target_distance(self, x1, y1, x2, y2):
         dx = x2 - x1
         dy = y2 - y1
         length_sq = dx * dx + dy * dy
@@ -557,7 +598,7 @@ class SealPerformance:
             (self.nose_x - closest_x) ** 2
             + (self.nose_y - closest_y) ** 2
         )
-        return distance_sq <= self.NOSE_HIT_RADIUS ** 2
+        return math.sqrt(distance_sq)
 
     def draw_preparation(self):
         launcher_x = self._preparation_launcher_x()
@@ -619,3 +660,4 @@ class SealPerformance:
                 ball_y,
                 rotation=-math.degrees(tilt)
             )
+        self._draw_accuracy()
