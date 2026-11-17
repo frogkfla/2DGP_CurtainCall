@@ -19,7 +19,7 @@ class SealPerformance:
 
     BALL_PALETTE_X = 260
     BALL_PALETTE_Y = 118
-    BALL_SIZE = 34
+    BALL_SIZE = 40
 
     SEAL_LEFT_X = 420
     SEAL_RIGHT_X = 930
@@ -464,13 +464,6 @@ class SealPerformance:
                 self.LAUNCHER_WIDTH,
                 direction=1
             )
-            if self.ball_loaded:
-                ball_x, ball_y = self._launcher_muzzle(
-                    launcher_x,
-                    self.LAUNCHER_FLOOR_Y,
-                    direction=1
-                )
-                self._draw_ball(ball_x, ball_y)
         elif self.drag_kind != 'new_launcher':
             self._draw_launcher(
                 self.LAUNCHER_PALETTE_X,
@@ -488,13 +481,6 @@ class SealPerformance:
     def draw_opening(self):
         self._draw_seal()
         self._draw_launcher_scene()
-        if self.ball_loaded:
-            x, y = self._launcher_muzzle(
-                self.launcher_front_x,
-                self.LAUNCHER_FLOOR_Y,
-                self.launcher_direction
-            )
-            self._draw_ball(x, y)
 
     def draw_performance(self):
         if self.phase == 'aiming':
@@ -507,10 +493,3 @@ class SealPerformance:
             self._draw_ball(self.ball_x, self.ball_y)
         elif self.phase == 'caught':
             self._draw_ball(self.nose_x, self.nose_y)
-        elif self.ball_loaded:
-            x, y = self._launcher_muzzle(
-                self.launcher_front_x,
-                self.LAUNCHER_FLOOR_Y,
-                self.launcher_direction
-            )
-            self._draw_ball(x, y)
