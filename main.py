@@ -36,6 +36,8 @@ SEAL_PREP = 12
 SEAL_OPENING = 13
 SEAL_PLAY = 14
 INTERMISSION = 15
+SEAL_CLOSING = 16
+SEAL_END = 17
 TUTORIAL_PLATFORM_SURFACE_OFFSET = 2
 GREETING_DURATION = 0.9
 
@@ -88,6 +90,8 @@ opening_time = 0.0
 OPENING_DURATION = 2.0
 intermission_time = 0.0
 INTERMISSION_DURATION = 2.0
+SEAL_CLOSING_DURATION = 2.0
+seal_closing_time = 0.0
 CURTAIN_MOVE_DISTANCE = SCREEN_WIDTH / 2
 RIGHT_CURTAIN_Y_OFFSET = 20
 
@@ -116,6 +120,7 @@ def is_mouse_on_button(x, y):
 def handle_events():
     global running, game_state
     global is_hover, is_pressed, opening_time, intermission_time
+    global seal_closing_time
     global greeting_active, greeting_time, greeting_completed
     global dog_performance
 
@@ -245,7 +250,23 @@ def handle_events():
             continue
 
         if game_state == SEAL_PLAY and seal_performance is not None:
-            seal_performance.handle_performance_event(event)
+            terminal_result = (
+                seal_performance.phase == 'caught'
+                or (
+                    seal_performance.phase == 'miss'
+                    and seal_performance.launch_attempts
+                    >= seal_performance.MAX_LAUNCH_ATTEMPTS
+                )
+            )
+            if (
+                terminal_result
+                and event.type == SDL_KEYDOWN
+                and event.key in (SDLK_RETURN, SDLK_KP_ENTER)
+            ):
+                seal_closing_time = 0.0
+                game_state = SEAL_CLOSING
+            else:
+                seal_performance.handle_performance_event(event)
             continue
 
         # 타이틀 화면 이외에는 시작 버튼 이벤트 무시
@@ -287,6 +308,7 @@ def handle_events():
 
 def update(dt):
     global game_state, opening_time, intermission_time
+    global seal_closing_time
     global greeting_active, greeting_time, greeting_completed
 
     if game_state == READY:
@@ -368,6 +390,12 @@ def update(dt):
 
     elif game_state == SEAL_PLAY:
         seal_performance.update(dt, game_ui)
+
+    elif game_state == SEAL_CLOSING:
+        seal_closing_time += dt
+        if seal_closing_time >= SEAL_CLOSING_DURATION:
+            seal_closing_time = SEAL_CLOSING_DURATION
+            game_state = SEAL_END
 
 
 # --------------------------------------------------
@@ -791,7 +819,7 @@ def draw_seal_play():
     elif seal_performance.phase == 'caught':
         draw_tutorial_control_bubble(
             prompt='공을 떨어뜨리지 않고 균형을 잡았어!',
-            hint='공연 성공!'
+            hint='ENTER : 커튼 닫기'
         )
     elif seal_performance.phase == 'falling':
         draw_tutorial_control_bubble(
@@ -807,9 +835,33 @@ def draw_seal_play():
             'R : 마지막 기회'
             if seal_performance.launch_attempts
             < seal_performance.MAX_LAUNCH_ATTEMPTS
-            else '발사 기회 종료'
+            else 'ENTER : 커튼 닫기'
         )
         draw_tutorial_control_bubble(prompt=prompt, hint=retry_hint)
+
+
+def draw_seal_closing():
+    draw_background(play_open_image)
+    game_ui.draw(
+        CHAPTER2_PERFORMANCE_NAME,
+        chapter='2장',
+        subtitle='실전'
+    )
+    seal_performance.draw_performance()
+    progress = min(seal_closing_time / SEAL_CLOSING_DURATION, 1.0)
+    move_distance = CURTAIN_MOVE_DISTANCE * smooth_step(1.0 - progress)
+    curtain_left.draw(
+        SCREEN_WIDTH / 2 - move_distance,
+        SCREEN_HEIGHT / 2,
+        SCREEN_WIDTH,
+        SCREEN_HEIGHT
+    )
+    curtain_right.draw(
+        SCREEN_WIDTH / 2 + move_distance,
+        SCREEN_HEIGHT / 2 + RIGHT_CURTAIN_Y_OFFSET,
+        SCREEN_WIDTH,
+        SCREEN_HEIGHT
+    )
 
 
 # --------------------------------------------------
@@ -866,6 +918,9 @@ def draw():
 
     elif game_state == SEAL_PLAY:
         draw_seal_play()
+
+    elif game_state in (SEAL_CLOSING, SEAL_END):
+        draw_seal_closing()
 
     update_canvas()
 
