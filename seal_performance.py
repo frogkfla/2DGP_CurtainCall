@@ -187,7 +187,7 @@ class SealPerformance:
         row_top, row_bottom = self.seal_rows[row_name]
         source_y = self.seal_image.h - row_bottom
         source_height = row_bottom - row_top
-        frame = self.seal_frame if self.caught else 0
+        frame = self.seal_frame
         source_x0 = (
             round(frame * self.seal_frame_width)
             + self.SEAL_FRAME_LEFT_PADDING
@@ -433,10 +433,17 @@ class SealPerformance:
                 self.ball_frame = (self.ball_frame + 1) % self.ball_columns
 
         if self.phase == 'caught':
-            self.seal_frame_timer += dt
-            while self.seal_frame_timer >= 0.18:
-                self.seal_frame_timer -= 0.18
-                self.seal_frame = (self.seal_frame + 1) % self.seal_columns
+            self._update_seal_animation(dt)
+
+    def _update_seal_animation(self, dt):
+        self.seal_frame_timer += dt
+        while self.seal_frame_timer >= 0.18:
+            self.seal_frame_timer -= 0.18
+            self.seal_frame = (self.seal_frame + 1) % self.seal_columns
+
+    def update_preparation(self, dt):
+        if self.phase == 'placing':
+            self._update_seal_animation(dt)
 
     def _segment_near_target(self, x1, y1, x2, y2):
         dx = x2 - x1

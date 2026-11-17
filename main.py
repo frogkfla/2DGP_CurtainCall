@@ -332,6 +332,7 @@ def update(dt):
 
     elif game_state == SEAL_PREP:
         seal_prep_dialogue.update(dt)
+        seal_performance.update_preparation(dt)
 
     elif game_state == DOG_OPENING:
         opening_time += dt
