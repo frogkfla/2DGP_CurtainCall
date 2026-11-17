@@ -183,7 +183,7 @@ class SealPerformance:
         )
 
     def _draw_seal(self, x=None, backstage=False):
-        row_name = 'caught' if self.caught else 'idle'
+        row_name = 'idle'
         row_top, row_bottom = self.seal_rows[row_name]
         source_y = self.seal_image.h - row_bottom
         source_height = row_bottom - row_top
