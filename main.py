@@ -731,16 +731,32 @@ def draw_seal_play():
         draw_tutorial_control_bubble(
             prompt='공이 포물선을 따라 날아가고 있어!'
         )
+    elif seal_performance.phase == 'balancing':
+        remaining = max(
+            0.0,
+            seal_performance.BALANCE_DURATION
+            - seal_performance.balance_elapsed
+        )
+        draw_tutorial_control_bubble(
+            prompt='←/→를 눌러 공의 균형을 잡아!',
+            hint=f'{remaining:.1f}초 버티기'
+        )
     elif seal_performance.phase == 'caught':
         draw_tutorial_control_bubble(
-            prompt='물개 콧잔등에 공이 안착했어!',
+            prompt='공을 떨어뜨리지 않고 균형을 잡았어!',
             hint='공연 성공!'
         )
-    elif seal_performance.phase == 'miss':
+    elif seal_performance.phase == 'falling':
         draw_tutorial_control_bubble(
-            prompt='빗나갔어. 각도를 바꿔 다시 해보자!',
-            hint='R : 재장전'
+            prompt='앗, 공이 굴러 떨어지고 있어!'
         )
+    elif seal_performance.phase == 'miss':
+        prompt = (
+            '공이 떨어졌어. 다시 균형을 잡아보자!'
+            if seal_performance.miss_reason == 'balance'
+            else '빗나갔어. 각도를 바꿔 다시 해보자!'
+        )
+        draw_tutorial_control_bubble(prompt=prompt, hint='R : 재장전')
 
 
 # --------------------------------------------------

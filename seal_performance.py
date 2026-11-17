@@ -40,6 +40,10 @@ class SealPerformance:
     NOSE_HIT_RADIUS = 38.0
     LAUNCHER_FRAME_PADDING = 3
     SEAL_FRAME_LEFT_PADDING = 10
+    BALANCE_DURATION = 6.0
+    BALANCE_MAX_TILT = 0.78
+    BALANCE_CONTROL_ACCEL = 5.5
+    BALANCE_DAMPING = 1.8
 
     def __init__(self):
         base = os.path.dirname(os.path.abspath(__file__))
@@ -112,6 +116,7 @@ class SealPerformance:
         self.ball_y = 0.0
         self.ball_vx = 0.0
         self.ball_vy = 0.0
+        self.ball_rotation = 0.0
         self.flight_time = 0.0
         self.ball_frame = 0
         self.ball_frame_timer = 0.0
@@ -119,6 +124,12 @@ class SealPerformance:
         self.seal_frame_timer = 0.0
         self.caught = False
         self.rewarded = False
+        self.balance_elapsed = 0.0
+        self.balance_angle = 0.0
+        self.balance_angular_velocity = 0.0
+        self.balance_left = False
+        self.balance_right = False
+        self.miss_reason = 'shot'
 
     def _angle_frame(self, angle=None):
         if angle is None:
@@ -164,18 +175,20 @@ class SealPerformance:
             height
         )
 
-    def _draw_ball(self, x, y, size=None):
+    def _draw_ball(self, x, y, size=None, rotation=0):
         if size is None:
             size = self.BALL_SIZE
 
         frame = self.ball_frame
         source_x0 = round(frame * self.ball_frame_width)
         source_x1 = round((frame + 1) * self.ball_frame_width)
-        self.ball_image.clip_draw(
+        self.ball_image.clip_composite_draw(
             source_x0,
             self.ball_source_y,
             source_x1 - source_x0,
             self.ball_source_height,
+            rotation,
+            '',
             x,
             y,
             size,
@@ -333,10 +346,23 @@ class SealPerformance:
             self.phase = 'aiming'
 
     def handle_performance_event(self, event):
+        if event.type == SDL_KEYUP:
+            if self.phase == 'balancing':
+                if event.key == SDLK_LEFT:
+                    self.balance_left = False
+                elif event.key == SDLK_RIGHT:
+                    self.balance_right = False
+            return
+
         if event.type != SDL_KEYDOWN:
             return
 
-        if self.phase == 'aiming':
+        if self.phase == 'balancing':
+            if event.key == SDLK_LEFT:
+                self.balance_left = True
+            elif event.key == SDLK_RIGHT:
+                self.balance_right = True
+        elif self.phase == 'aiming':
             if event.key == SDLK_UP:
                 self.launcher_angle = min(
                     self.MAX_ANGLE,
@@ -352,6 +378,7 @@ class SealPerformance:
         elif self.phase == 'miss' and event.key == SDLK_r:
             self.ball_loaded = True
             self.ball_frame = 0
+            self.miss_reason = 'shot'
             self.phase = 'aiming'
 
     def _launch(self):
@@ -365,7 +392,9 @@ class SealPerformance:
         self.ball_y = muzzle_y
         self.ball_vx = self.launcher_direction * self.LAUNCH_SPEED * math.cos(radians)
         self.ball_vy = self.LAUNCH_SPEED * math.sin(radians)
+        self.ball_rotation = 0.0
         self.flight_time = 0.0
+        self.miss_reason = 'shot'
         self.ball_loaded = False
         self.phase = 'flying'
 
@@ -406,6 +435,9 @@ class SealPerformance:
             self.ball_x += self.ball_vx * dt
             self.ball_vy -= self.GRAVITY * dt
             self.ball_y += self.ball_vy * dt
+            self.ball_rotation -= math.degrees(
+                self.ball_vx / self.BALL_SIZE
+            ) * dt
 
             # 빠른 프레임에서도 콧잔등을 통과해 놓치지 않도록 선분 간격을 검사한다.
             if self._segment_near_target(
@@ -413,11 +445,15 @@ class SealPerformance:
             ):
                 self.ball_x = self.nose_x
                 self.ball_y = self.nose_y
-                self.phase = 'caught'
+                self.phase = 'balancing'
                 self.caught = True
-                if not self.rewarded:
-                    game_ui.reward_success()
-                    self.rewarded = True
+                self.balance_elapsed = 0.0
+                self.balance_angle = 0.12 * self.launcher_direction
+                self.balance_angular_velocity = (
+                    0.45 * self.launcher_direction
+                )
+                self.balance_left = False
+                self.balance_right = False
             elif (
                 self.ball_y <= self.STAGE_GROUND_Y
                 or self.ball_x < 0
@@ -426,14 +462,71 @@ class SealPerformance:
             ):
                 self.phase = 'miss'
 
-        if self.phase in ('flying', 'caught'):
+        if self.phase == 'balancing':
+            self._update_balance(dt, game_ui)
+        elif self.phase == 'falling':
+            self._update_falling_ball(dt)
+
+        if self.phase in ('flying', 'balancing', 'caught', 'falling'):
             self.ball_frame_timer += dt
             while self.ball_frame_timer >= 0.07:
                 self.ball_frame_timer -= 0.07
                 self.ball_frame = (self.ball_frame + 1) % self.ball_columns
 
-        if self.phase == 'caught':
+        if self.phase in ('balancing', 'caught'):
             self._update_seal_animation(dt)
+
+    def _update_balance(self, dt, game_ui):
+        self.balance_elapsed += dt
+        control = int(self.balance_right) - int(self.balance_left)
+        wobble = (
+            1.45 * math.sin(self.balance_elapsed * 2.6)
+            + 0.55 * math.sin(self.balance_elapsed * 4.7)
+        )
+        angular_acceleration = (
+            3.6 * math.sin(self.balance_angle)
+            + wobble
+            + control * self.BALANCE_CONTROL_ACCEL
+            - self.BALANCE_DAMPING * self.balance_angular_velocity
+        )
+        self.balance_angular_velocity += angular_acceleration * dt
+        self.balance_angle += self.balance_angular_velocity * dt
+
+        if abs(self.balance_angle) >= self.BALANCE_MAX_TILT:
+            self._start_falling_ball()
+        elif self.balance_elapsed >= self.BALANCE_DURATION:
+            self.phase = 'caught'
+            self.balance_left = False
+            self.balance_right = False
+            if not self.rewarded:
+                game_ui.reward_success()
+                self.rewarded = True
+
+    def _start_falling_ball(self):
+        direction = 1 if self.balance_angle >= 0 else -1
+        self.ball_x = self.nose_x + math.sin(self.balance_angle) * 18
+        self.ball_y = self.nose_y
+        self.ball_vx = (
+            direction * 95
+            + self.balance_angular_velocity * 24
+        )
+        self.ball_vy = -45
+        self.ball_rotation = -math.degrees(self.balance_angle)
+        self.miss_reason = 'balance'
+        self.balance_left = False
+        self.balance_right = False
+        self.phase = 'falling'
+
+    def _update_falling_ball(self, dt):
+        self.ball_vy -= self.GRAVITY * dt
+        self.ball_x += self.ball_vx * dt
+        self.ball_y += self.ball_vy * dt
+        self.ball_rotation -= math.degrees(
+            self.ball_vx / self.BALL_SIZE
+        ) * dt
+        if self.ball_y <= self.STAGE_GROUND_Y:
+            self.ball_y = self.STAGE_GROUND_Y
+            self.phase = 'miss'
 
     def _update_seal_animation(self, dt):
         self.seal_frame_timer += dt
@@ -511,7 +604,18 @@ class SealPerformance:
         self._draw_seal()
         self._draw_launcher_scene()
 
-        if self.phase == 'flying' or self.phase == 'miss':
-            self._draw_ball(self.ball_x, self.ball_y)
-        elif self.phase == 'caught':
-            self._draw_ball(self.nose_x, self.nose_y)
+        if self.phase in ('flying', 'falling', 'miss'):
+            self._draw_ball(
+                self.ball_x,
+                self.ball_y,
+                rotation=self.ball_rotation
+            )
+        elif self.phase in ('balancing', 'caught'):
+            tilt = self.balance_angle
+            ball_x = self.nose_x + math.sin(tilt) * 18
+            ball_y = self.nose_y + (math.cos(tilt) - 1) * 8
+            self._draw_ball(
+                ball_x,
+                ball_y,
+                rotation=-math.degrees(tilt)
+            )
