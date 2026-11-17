@@ -20,6 +20,7 @@ class SealPerformance:
     BALL_PALETTE_X = 260
     BALL_PALETTE_Y = 118
     BALL_SIZE = 40
+    MAX_LAUNCH_ATTEMPTS = 2
 
     SEAL_LEFT_X = 420
     SEAL_RIGHT_X = 930
@@ -116,6 +117,7 @@ class SealPerformance:
         self.launcher_direction = 1
         self.launcher_angle = self.START_ANGLE
         self.ball_loaded = False
+        self.launch_attempts = 0
 
         self.drag_kind = None
         self.drag_offset_x = 0.0
@@ -388,11 +390,12 @@ class SealPerformance:
             elif event.key == SDLK_SPACE and self.ball_loaded:
                 self._launch()
         elif self.phase == 'miss' and event.key == SDLK_r:
-            self.ball_loaded = True
-            self.ball_frame = 0
-            self.miss_reason = 'shot'
-            self.accuracy_grade = None
-            self.phase = 'aiming'
+            if self.launch_attempts < self.MAX_LAUNCH_ATTEMPTS:
+                self.ball_loaded = True
+                self.ball_frame = 0
+                self.miss_reason = 'shot'
+                self.accuracy_grade = None
+                self.phase = 'aiming'
 
     def _launch(self):
         muzzle_x, muzzle_y = self._launcher_muzzle(
@@ -410,6 +413,7 @@ class SealPerformance:
         self.miss_reason = 'shot'
         self.accuracy_grade = None
         self.ball_loaded = False
+        self.launch_attempts += 1
         self.phase = 'flying'
 
     def _trajectory_position(self, time):

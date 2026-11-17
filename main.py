@@ -725,7 +725,11 @@ def draw_seal_play():
     if seal_performance.phase == 'aiming':
         draw_tutorial_control_bubble(
             prompt='↑/↓ 각도 조절, SPACE 발사',
-            hint=f'{round(seal_performance.launcher_angle)}°'
+            hint=(
+                f'{round(seal_performance.launcher_angle)}°  '
+                f'{seal_performance.launch_attempts + 1}/'
+                f'{seal_performance.MAX_LAUNCH_ATTEMPTS}회'
+            )
         )
     elif seal_performance.phase == 'flying':
         draw_tutorial_control_bubble(
@@ -759,7 +763,13 @@ def draw_seal_play():
             if seal_performance.miss_reason == 'balance'
             else '빗나갔어. 각도를 바꿔 다시 해보자!'
         )
-        draw_tutorial_control_bubble(prompt=prompt, hint='R : 재장전')
+        retry_hint = (
+            'R : 마지막 기회'
+            if seal_performance.launch_attempts
+            < seal_performance.MAX_LAUNCH_ATTEMPTS
+            else '발사 기회 종료'
+        )
+        draw_tutorial_control_bubble(prompt=prompt, hint=retry_hint)
 
 
 # --------------------------------------------------
