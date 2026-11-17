@@ -44,6 +44,7 @@ class SealPerformance:
     BALANCE_MAX_TILT = 0.78
     BALANCE_CONTROL_ACCEL = 5.5
     BALANCE_DAMPING = 1.8
+    BALANCE_VISUAL_SHIFT = 34
     PERFECT_HIT_DISTANCE = 12.0
     ACCURACY_DRAW_WIDTH = 90
 
@@ -524,7 +525,10 @@ class SealPerformance:
 
     def _start_falling_ball(self):
         direction = 1 if self.balance_angle >= 0 else -1
-        self.ball_x = self.nose_x + math.sin(self.balance_angle) * 18
+        self.ball_x = (
+            self.nose_x
+            + math.sin(self.balance_angle) * self.BALANCE_VISUAL_SHIFT
+        )
         self.ball_y = self.nose_y
         self.ball_vx = (
             direction * 95
@@ -573,6 +577,37 @@ class SealPerformance:
             self.nose_y + 72,
             self.ACCURACY_DRAW_WIDTH,
             draw_height
+        )
+
+    def balance_fall_direction(self):
+        predicted_tilt = (
+            self.balance_angle
+            + self.balance_angular_velocity * 0.25
+        )
+        if abs(predicted_tilt) < 0.035:
+            predicted_tilt = self.balance_angular_velocity
+        return 1 if predicted_tilt >= 0 else -1
+
+    def _draw_balance_direction(self, x, y, direction):
+        start_x = x + direction * 12
+        end_x = x + direction * 50
+        arrow_y = y + self.BALL_SIZE * 0.72
+        color = (255, 133, 48, 255)
+        draw_line(start_x, arrow_y, end_x, arrow_y, *color)
+        draw_line(start_x, arrow_y + 2, end_x, arrow_y + 2, *color)
+        draw_line(
+            end_x,
+            arrow_y,
+            end_x - direction * 11,
+            arrow_y + 9,
+            *color
+        )
+        draw_line(
+            end_x,
+            arrow_y,
+            end_x - direction * 11,
+            arrow_y - 9,
+            *color
         )
 
     def update_preparation(self, dt):
@@ -653,11 +688,17 @@ class SealPerformance:
             )
         elif self.phase in ('balancing', 'caught'):
             tilt = self.balance_angle
-            ball_x = self.nose_x + math.sin(tilt) * 18
+            ball_x = self.nose_x + math.sin(tilt) * self.BALANCE_VISUAL_SHIFT
             ball_y = self.nose_y + (math.cos(tilt) - 1) * 8
             self._draw_ball(
                 ball_x,
                 ball_y,
                 rotation=-math.degrees(tilt)
             )
+            if self.phase == 'balancing':
+                self._draw_balance_direction(
+                    ball_x,
+                    ball_y,
+                    self.balance_fall_direction()
+                )
         self._draw_accuracy()

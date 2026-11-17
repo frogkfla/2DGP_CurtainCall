@@ -737,8 +737,11 @@ def draw_seal_play():
             seal_performance.BALANCE_DURATION
             - seal_performance.balance_elapsed
         )
+        direction = seal_performance.balance_fall_direction()
+        falling_side = '오른쪽' if direction > 0 else '왼쪽'
+        counter_key = '←' if direction > 0 else '→'
         draw_tutorial_control_bubble(
-            prompt='←/→를 눌러 공의 균형을 잡아!',
+            prompt=f'공이 {falling_side}으로 기울어! {counter_key}로 잡아!',
             hint=f'{remaining:.1f}초 버티기'
         )
     elif seal_performance.phase == 'caught':
