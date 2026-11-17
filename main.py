@@ -328,6 +328,7 @@ def update(dt):
 
     elif game_state == CHAPTER1_PREP:
         dog_prep_dialogue.update(dt)
+        dog_performance.update_waiting(dt)
 
     elif game_state == SEAL_PREP:
         seal_prep_dialogue.update(dt)
@@ -895,7 +896,8 @@ def main():
     dog_prep_dialogue = Dialogue()
     dog_prep_dialogue.lines = [
         '다음 순서인 강아지 공연을 준비해줘!',
-        '왼쪽 아래에서 후프를 드래그해 배치해줘.',
+        '강아지는 저쪽에서부터 달릴 거야.',
+        '강아지가 뛰어넘을 후프를 드래그해 배치해줘.',
         '후프는 최대 5개까지 배치할 수 있어. ',
         '더 많이 성공할수록 좋은 점수를 받을 수 있어. 실패하지 않게 적당히 배치해봐!',
         '배치가 끝나면 ENTER를 눌러 공연을 시작하자!'

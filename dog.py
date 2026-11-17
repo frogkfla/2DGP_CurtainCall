@@ -13,6 +13,7 @@ class DogPerformance:
     DOG_FLOOR_Y = 260
     HOOP_FLOOR_Y = 260
     DOG_START_X = 110
+    BACKSTAGE_DOG_OFFSET_X = 35
     DOG_END_X = 1160
     RUN_SPEED = 165
     TARGET_JUMP_DISTANCE = 147
@@ -222,6 +223,12 @@ class DogPerformance:
         return False
 
     def draw_preparation(self):
+        # 무대 뒤 시점은 관객석과 좌우가 반대이므로 출발 위치도 오른쪽에 표시한다.
+        self._draw_dog(
+            x=self.SCREEN_WIDTH - self.DOG_START_X - self.BACKSTAGE_DOG_OFFSET_X,
+            facing_left=True
+        )
+
         for hoop in self.hoops:
             self._draw_hoop(
                 hoop['x'], hoop['y'], self.HOOP_WIDTH, self.hoop_height
@@ -279,7 +286,7 @@ class DogPerformance:
         self.frame_timer = 0.0
 
     def update_waiting(self, dt):
-        if self.phase != 'ready':
+        if self.phase not in ('placing', 'ready'):
             return
 
         self.frame_timer += dt
@@ -459,13 +466,15 @@ class DogPerformance:
             draw_height
         )
 
-    def _draw_dog(self):
+    def _draw_dog(self, x=None, facing_left=False):
         # clip_draw 원점은 이미지 하단이므로 실제 행 범위를 아래쪽 좌표로 바꾼다.
-        standing = self.phase in ('opening', 'ready')
+        standing = self.phase in ('placing', 'opening', 'ready')
         visual_row = (
             2 if self.arrived or standing
             else (1 if self.jump_active else 0)
         )
+        if x is None:
+            x = self.dog_x
         source_x0 = round(self.frame_index * self.frame_width)
         source_x1 = round((self.frame_index + 1) * self.frame_width)
         row_top = self.sprite_row_top[visual_row]
@@ -473,12 +482,14 @@ class DogPerformance:
         source_y0 = self.dog_image.h - row_bottom
         source_height = row_bottom - row_top
 
-        self.dog_image.clip_draw(
+        self.dog_image.clip_composite_draw(
             source_x0,
             source_y0,
             source_x1 - source_x0,
             source_height,
-            self.dog_x,
+            0,
+            'h' if facing_left else '',
+            x,
             self.DOG_FLOOR_Y + self.jump_offset + self.DOG_HEIGHT / 2 - 2,
             self.DOG_WIDTH,
             self.DOG_HEIGHT
