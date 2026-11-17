@@ -329,10 +329,12 @@ def update(dt):
     elif game_state == CHAPTER1_PREP:
         dog_prep_dialogue.update(dt)
         dog_performance.update_waiting(dt)
+        mouse.update()
 
     elif game_state == SEAL_PREP:
         seal_prep_dialogue.update(dt)
         seal_performance.update_preparation(dt)
+        mouse.update()
 
     elif game_state == DOG_OPENING:
         opening_time += dt
@@ -639,6 +641,7 @@ def draw_chapter1_prep():
         subtitle='실전'
     )
     dog_performance.draw_preparation()
+    mouse.draw()
     dog_prep_dialogue.draw()
 
 
@@ -685,6 +688,7 @@ def draw_seal_prep():
         subtitle='실전'
     )
     seal_performance.draw_preparation()
+    mouse.draw()
     seal_prep_dialogue.draw()
 
 
