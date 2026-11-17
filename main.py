@@ -35,6 +35,7 @@ DOG_READY = 11
 SEAL_PREP = 12
 SEAL_OPENING = 13
 SEAL_PLAY = 14
+INTERMISSION = 15
 TUTORIAL_PLATFORM_SURFACE_OFFSET = 2
 GREETING_DURATION = 0.9
 
@@ -85,6 +86,8 @@ is_pressed = False
 # 커튼 애니메이션
 opening_time = 0.0
 OPENING_DURATION = 2.0
+intermission_time = 0.0
+INTERMISSION_DURATION = 2.0
 CURTAIN_MOVE_DISTANCE = SCREEN_WIDTH / 2
 RIGHT_CURTAIN_Y_OFFSET = 20
 
@@ -112,7 +115,7 @@ def is_mouse_on_button(x, y):
 
 def handle_events():
     global running, game_state
-    global is_hover, is_pressed, opening_time
+    global is_hover, is_pressed, opening_time, intermission_time
     global greeting_active, greeting_time, greeting_completed
     global dog_performance
 
@@ -230,7 +233,8 @@ def handle_events():
                 and event.type == SDL_KEYDOWN
                 and event.key in (SDLK_RETURN, SDLK_KP_ENTER)
             ):
-                game_state = SEAL_PREP
+                intermission_time = 0.0
+                game_state = INTERMISSION
             else:
                 dog_performance.handle_performance_event(event)
             continue
@@ -282,7 +286,7 @@ def handle_events():
 # --------------------------------------------------
 
 def update(dt):
-    global game_state, opening_time
+    global game_state, opening_time, intermission_time
     global greeting_active, greeting_time, greeting_completed
 
     if game_state == READY:
@@ -335,6 +339,12 @@ def update(dt):
         seal_prep_dialogue.update(dt)
         seal_performance.update_preparation(dt)
         mouse.update()
+
+    elif game_state == INTERMISSION:
+        intermission_time += dt
+        mouse.update()
+        if intermission_time >= INTERMISSION_DURATION:
+            game_state = SEAL_PREP
 
     elif game_state == DOG_OPENING:
         opening_time += dt
@@ -666,6 +676,32 @@ def draw_dog_play():
         )
 
 
+def draw_intermission():
+    draw_background(play_image)
+    game_ui.draw(
+        CHAPTER1_PERFORMANCE_NAME,
+        chapter='1장',
+        subtitle='실전'
+    )
+    dog_performance.draw_performance()
+    game_ui.draw_stars(dog_performance.star_rating)
+
+    progress = min(intermission_time / INTERMISSION_DURATION, 1.0)
+    move_distance = CURTAIN_MOVE_DISTANCE * smooth_step(1.0 - progress)
+    curtain_left.draw(
+        SCREEN_WIDTH / 2 - move_distance,
+        SCREEN_HEIGHT / 2,
+        SCREEN_WIDTH,
+        SCREEN_HEIGHT
+    )
+    curtain_right.draw(
+        SCREEN_WIDTH / 2 + move_distance,
+        SCREEN_HEIGHT / 2 + RIGHT_CURTAIN_Y_OFFSET,
+        SCREEN_WIDTH,
+        SCREEN_HEIGHT
+    )
+
+
 def draw_dog_ready():
     draw_background(play_image)
     game_ui.draw(
@@ -815,6 +851,9 @@ def draw():
 
     elif game_state == DOG_PLAY:
         draw_dog_play()
+
+    elif game_state == INTERMISSION:
+        draw_intermission()
 
     elif game_state == DOG_READY:
         draw_dog_ready()
