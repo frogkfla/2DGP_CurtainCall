@@ -473,7 +473,7 @@ class SealPerformance:
                 self.ball_frame_timer -= 0.07
                 self.ball_frame = (self.ball_frame + 1) % self.ball_columns
 
-        if self.phase in ('balancing', 'caught'):
+        if self.phase in ('aiming', 'balancing', 'caught'):
             self._update_seal_animation(dt)
 
     def _update_balance(self, dt, game_ui):
