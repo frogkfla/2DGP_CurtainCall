@@ -15,7 +15,7 @@ from seal_performance import SealPerformance
 SCREEN_WIDTH = 1280
 SCREEN_HEIGHT = 720
 CHAPTER1_PERFORMANCE_NAME = '강아지의 후프 점프'
-CHAPTER2_PERFORMANCE_NAME = '물개의 코 위에 공 안착'
+CHAPTER2_PERFORMANCE_NAME = '물개의 공 받기'
 CONTROL_HINT_X = 290
 CONTROL_HINT_Y = 96
 
@@ -904,7 +904,7 @@ def main():
 
     seal_prep_dialogue = Dialogue()
     seal_prep_dialogue.lines = [
-        '다음 공연은 물개 콧잔등에 공을 안착시키는 거야!',
+        '다음 공연은 물개가 받기 쉽게 공을 던져주는 거야!',
         '왼쪽 아래 발사대를 무대 위에 놓고, 공을 발사대 입구에 끌어 장전해.',
         '준비가 끝나면 ENTER를 눌러 커튼을 열자!'
     ]
