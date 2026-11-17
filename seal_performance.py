@@ -404,11 +404,6 @@ class SealPerformance:
             self.ball_vy -= self.GRAVITY * dt
             self.ball_y += self.ball_vy * dt
 
-            self.ball_frame_timer += dt
-            while self.ball_frame_timer >= 0.07:
-                self.ball_frame_timer -= 0.07
-                self.ball_frame = (self.ball_frame + 1) % self.ball_columns
-
             # 빠른 프레임에서도 콧잔등을 통과해 놓치지 않도록 선분 간격을 검사한다.
             if self._segment_near_target(
                 previous_x, previous_y, self.ball_x, self.ball_y
@@ -427,6 +422,12 @@ class SealPerformance:
                 or self.flight_time >= 4.0
             ):
                 self.phase = 'miss'
+
+        if self.phase in ('flying', 'caught'):
+            self.ball_frame_timer += dt
+            while self.ball_frame_timer >= 0.07:
+                self.ball_frame_timer -= 0.07
+                self.ball_frame = (self.ball_frame + 1) % self.ball_columns
 
         if self.phase == 'caught':
             self.seal_frame_timer += dt
