@@ -21,7 +21,8 @@ class SealPerformance:
     BALL_PALETTE_Y = 118
     BALL_SIZE = 34
 
-    SEAL_X = 930
+    SEAL_LEFT_X = 420
+    SEAL_RIGHT_X = 930
     SEAL_FLOOR_Y = 145
     SEAL_WIDTH = 160
 
@@ -80,7 +81,6 @@ class SealPerformance:
             'idle': (31, 327),
             'caught': (395, 690),
         }
-        self.seal_x = self.SEAL_X
         self.seal_floor_y = self.SEAL_FLOOR_Y
         idle_top, idle_bottom = self.seal_rows['idle']
         self.seal_source_height = idle_bottom - idle_top
@@ -89,9 +89,7 @@ class SealPerformance:
             * self.seal_source_height
             / self.seal_frame_width
         )
-        # 첫 프레임의 콧잔등 위치를 기준으로 공 착지 지점을 잡는다.
-        self.nose_x = self.seal_x + self.SEAL_WIDTH * 0.335
-        self.nose_y = self.seal_floor_y + self.seal_draw_height * 0.93
+        self._set_seal_position(self.SEAL_RIGHT_X)
 
         self.phase = 'placing'
         self.launcher_back_x = None
@@ -123,6 +121,12 @@ class SealPerformance:
             angle = self.launcher_angle
         progress = (angle - self.MIN_ANGLE) / (self.MAX_ANGLE - self.MIN_ANGLE)
         return max(0, min(7, round(progress * 7)))
+
+    def _set_seal_position(self, x):
+        self.seal_x = x
+        # 물개 스프라이트 첫 프레임의 콧잔등 위치를 기준으로 착지점을 갱신한다.
+        self.nose_x = self.seal_x + self.SEAL_WIDTH * 0.335
+        self.nose_y = self.seal_floor_y + self.seal_draw_height * 0.93
 
     def _launcher_muzzle(self, x, floor_y, direction=1):
         radians = math.radians(self.launcher_angle)
@@ -230,6 +234,12 @@ class SealPerformance:
             ):
                 # 무대 뒤와 관객석은 좌우가 반대인 시점이다.
                 self.launcher_front_x = self.SCREEN_WIDTH - self.launcher_back_x
+                seal_x = (
+                    self.SEAL_LEFT_X
+                    if self.launcher_front_x >= self.SCREEN_WIDTH / 2
+                    else self.SEAL_RIGHT_X
+                )
+                self._set_seal_position(seal_x)
                 self.launcher_direction = (
                     1 if self.nose_x >= self.launcher_front_x else -1
                 )
